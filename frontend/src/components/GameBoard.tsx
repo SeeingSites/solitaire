@@ -143,7 +143,92 @@ export default function GameBoard() {
 
   return (
     <DragDropProvider>
-      <div className="flex flex-col gap-4 sm:gap-6 p-2 sm:p-4">
+      <div className="flex flex-col gap-3 sm:gap-6 p-2 sm:p-4">
+        {/* Controls - top of page for mobile accessibility */}
+        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-3">
+          <button
+            onClick={handleUndo}
+            disabled={!canUndo}
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+          >
+            Undo
+          </button>
+          <button
+            onClick={handleRedo}
+            disabled={isDemoMode}
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+          >
+            Redo
+          </button>
+          <button
+            onClick={handleAutoComplete}
+            disabled={isDemoMode}
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+          >
+            Auto Complete
+          </button>
+
+          {/* Separator */}
+          <div className="w-px bg-gray-600 mx-0.5 sm:mx-1" />
+
+          {/* Demo controls */}
+          {isDemoMode ? (
+            <button
+              onClick={stopDemo}
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-500
+                       transition-colors text-xs sm:text-sm font-bold animate-pulse"
+            >
+              Stop Demo
+            </button>
+          ) : (
+            <button
+              onClick={startDemo}
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500
+                       transition-colors text-xs sm:text-sm"
+            >
+              Watch Demo
+            </button>
+          )}
+
+          {/* Speed selector */}
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-800 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1">
+            <span className="text-[10px] sm:text-xs text-gray-400 mr-0.5 sm:mr-1">Speed:</span>
+            {SPEED_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setDemoSpeed(opt.value)}
+                className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors
+                  ${
+                    demoSpeed === opt.value
+                      ? "bg-purple-600 text-white"
+                      : "text-gray-400 hover:text-white hover:bg-gray-700"
+                  }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Game Status */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3 text-center text-gray-400 text-[11px] sm:text-sm">
+          <span>
+            Moves: {state.moveCount} | Stock: {state.stock.length} | Waste: {state.waste.length}
+          </span>
+          {isDemoMode && <span className="text-purple-400 font-medium">Demo Mode</span>}
+          {logsExist && (
+            <button
+              onClick={exportLogs}
+              className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Export Logs
+            </button>
+          )}
+        </div>
+
         {/* Top row: Stock, Waste, Foundations */}
         <div className="flex justify-center items-center gap-[var(--card-gap-top)]">
           <StockPile count={state.stock.length} onClick={handleStockClick} />
@@ -182,91 +267,6 @@ export default function GameBoard() {
               isDropTarget={selectedCard !== null && !isDemoMode}
             />
           ))}
-        </div>
-
-        {/* Controls */}
-        <div className="flex flex-wrap justify-center gap-3 mt-4">
-          <button
-            onClick={handleUndo}
-            disabled={!canUndo}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-          >
-            Undo
-          </button>
-          <button
-            onClick={handleRedo}
-            disabled={isDemoMode}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-          >
-            Redo
-          </button>
-          <button
-            onClick={handleAutoComplete}
-            disabled={isDemoMode}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
-          >
-            Auto Complete
-          </button>
-
-          {/* Separator */}
-          <div className="w-px bg-gray-600 mx-1" />
-
-          {/* Demo controls */}
-          {isDemoMode ? (
-            <button
-              onClick={stopDemo}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500
-                       transition-colors text-sm font-bold animate-pulse"
-            >
-              Stop Demo
-            </button>
-          ) : (
-            <button
-              onClick={startDemo}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500
-                       transition-colors text-sm"
-            >
-              Watch Demo
-            </button>
-          )}
-
-          {/* Speed selector */}
-          <div className="flex items-center gap-1 bg-gray-800 rounded-lg px-2 py-1">
-            <span className="text-xs text-gray-400 mr-1">Speed:</span>
-            {SPEED_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setDemoSpeed(opt.value)}
-                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors
-                  ${
-                    demoSpeed === opt.value
-                      ? "bg-purple-600 text-white"
-                      : "text-gray-400 hover:text-white hover:bg-gray-700"
-                  }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Game Status */}
-        <div className="flex items-center justify-center gap-3 text-center text-gray-400 text-sm">
-          <span>
-            Moves: {state.moveCount} | Stock: {state.stock.length} | Waste: {state.waste.length}
-          </span>
-          {isDemoMode && <span className="text-purple-400 font-medium">Demo Mode</span>}
-          {logsExist && (
-            <button
-              onClick={exportLogs}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Export Logs
-            </button>
-          )}
         </div>
 
         {/* Win Cascade */}

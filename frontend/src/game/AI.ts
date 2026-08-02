@@ -98,10 +98,10 @@ function evaluateState(state: SolitaireState, prevState?: SolitaireState): numbe
   if (prevState) {
     const prevFaceDown = countFaceDown(prevState.tableau);
     const flipped = prevFaceDown - faceDown;
-    if (flipped > 0) score += flipped * 25;
+    if (flipped > 0) score += flipped * 40;
   }
 
-  score -= countBuriedFaceUp(state.tableau) * 2;
+  score -= countBuriedFaceUp(state.tableau) * 4;
 
   score -= state.waste.length * 3;
 
@@ -198,10 +198,10 @@ function quickEvaluate(state: SolitaireState): number {
   }
   const faceDown = countFaceDown(state.tableau);
   score -= faceDown * 8;
-  score -= countBuriedFaceUp(state.tableau) * 3;
+  score -= countBuriedFaceUp(state.tableau) * 5;
   score -= state.waste.length * 2;
   for (const pile of state.tableau) {
-    if (pile.length === 0) score += 20;
+    if (pile.length === 0) score += 30;
   }
   for (const pile of state.tableau) {
     for (const card of pile) {
@@ -211,7 +211,13 @@ function quickEvaluate(state: SolitaireState): number {
       const foundation = state.foundations[foundationIdx];
       const nextRank = RANKS[foundation.length];
       if (card.rank === nextRank) {
-        score += 20;
+        score += 25;
+      } else if (foundation.length > 0) {
+        const cardVal = RANK_VALUES[card.rank];
+        const nextVal = RANK_VALUES[nextRank];
+        if (cardVal === nextVal - 1) {
+          score += 8;
+        }
       }
     }
   }
@@ -255,17 +261,26 @@ export function findBestMove(
     const hash = hashState(resultState);
     const hashCycle = recentStateSet.has(hash);
 
+    let willFlipCard = false;
+    let willEmptyPile = false;
+    let isKingToEmpty = false;
     let isUnproductiveTableauMove = false;
+
     if (move.from.type === "tableau" && move.to.type === "tableau") {
       const sourcePile = state.tableau[move.from.pileIndex];
       const destPile = state.tableau[move.to.pileIndex];
       const cardBelowIndex = move.from.cardIndex - 1;
-      const willFlipCard = cardBelowIndex >= 0 && !sourcePile[cardBelowIndex].faceUp;
-      const willEmptyPile = move.from.cardIndex === 0;
+      willFlipCard = cardBelowIndex >= 0 && !sourcePile[cardBelowIndex].faceUp;
+      willEmptyPile = move.from.cardIndex === 0;
       const isDestEmpty = destPile.length === 0;
       const movedCard = sourcePile[move.from.cardIndex];
-      const isKingToEmpty = isDestEmpty && movedCard?.rank === "K";
+      isKingToEmpty = isDestEmpty && movedCard?.rank === "K";
       isUnproductiveTableauMove = !willFlipCard && !willEmptyPile && !isKingToEmpty;
+    } else if (move.from.type === "tableau") {
+      const sourcePile = state.tableau[move.from.pileIndex];
+      const cardBelowIndex = move.from.cardIndex - 1;
+      willFlipCard = cardBelowIndex >= 0 && !sourcePile[cardBelowIndex].faceUp;
+      willEmptyPile = move.from.cardIndex === 0;
     }
 
     let moveBonus = 0;
@@ -276,12 +291,10 @@ export function findBestMove(
     } else if (move.from.type === "tableau" && move.to.type === "foundation") {
       moveBonus = 60;
     } else if (move.from.type === "tableau" && move.to.type === "tableau") {
-      const sourcePile = state.tableau[move.from.pileIndex];
+      const movedCard = state.tableau[move.from.pileIndex][move.from.cardIndex];
       const destPile = state.tableau[move.to.pileIndex];
-      const movedCard = sourcePile[move.from.cardIndex];
       const isDestEmpty = destPile.length === 0;
-      const isKingToEmpty = isDestEmpty && movedCard?.rank === "K";
-      const willEmptyPile = move.from.cardIndex === 0;
+      isKingToEmpty = isDestEmpty && movedCard?.rank === "K";
 
       if (isKingToEmpty && !willEmptyPile) {
         moveBonus = 30;
@@ -299,8 +312,39 @@ export function findBestMove(
       }
     }
 
+    if (willFlipCard) {
+      moveBonus += 35;
+      if (move.from.type === "tableau") {
+        const sourcePile = state.tableau[move.from.pileIndex];
+        const cardBelowIndex = move.from.cardIndex - 1;
+        if (cardBelowIndex >= 0) {
+          const revealedCard = sourcePile[cardBelowIndex];
+          const foundationIdx = FOUNDATION_SUITS.indexOf(revealedCard.suit);
+          if (foundationIdx >= 0) {
+            const foundation = state.foundations[foundationIdx];
+            const nextRank = RANKS[foundation.length];
+            if (revealedCard.rank === nextRank) {
+              moveBonus += 20;
+            }
+          }
+        }
+      }
+    }
+
+    if (
+      move.from.type === "tableau" &&
+      move.to.type === "tableau" &&
+      willEmptyPile &&
+      !isKingToEmpty
+    ) {
+      const nonEmptyPiles = state.tableau.filter((p) => p.length > 0).length;
+      if (nonEmptyPiles > 1) {
+        moveBonus -= 15;
+      }
+    }
+
     const shufflingPenalty = isUnproductiveTableauMove
-      ? -30 - Math.min(ctx.movesSinceFoundation * 2, 50)
+      ? -50 - Math.min(ctx.movesSinceFoundation * 3, 60)
       : 0;
 
     simulations.push({
@@ -355,11 +399,11 @@ function greedyQuickSelect(
       } else if (isKingToEmpty && willEmptyPile) {
         moveBonus = -30;
       } else if (willFlipCard) {
-        moveBonus = 80;
+        moveBonus = 100;
       } else if (willEmptyPile) {
         moveBonus = 60;
       } else {
-        moveBonus = -30;
+        moveBonus = -40;
       }
     }
 
@@ -419,11 +463,22 @@ export function rolloutBestMove(
       } else if (isKingToEmpty && willEmptyPile) {
         moveBonus = -25;
       } else if (!willFlipCard && !willEmptyPile) {
-        moveBonus = -30 - Math.min(context.movesSinceFoundation * 2, 50);
+        moveBonus = -50 - Math.min(context.movesSinceFoundation * 3, 60);
       } else if (willFlipCard) {
-        moveBonus = 15;
+        moveBonus = 40;
+        if (cardBelowIndex >= 0) {
+          const revealedCard = sourcePile[cardBelowIndex];
+          const foundationIdx = FOUNDATION_SUITS.indexOf(revealedCard.suit);
+          if (foundationIdx >= 0) {
+            const foundation = currentState.foundations[foundationIdx];
+            const nextRank = RANKS[foundation.length];
+            if (revealedCard.rank === nextRank) {
+              moveBonus += 20;
+            }
+          }
+        }
       } else if (willEmptyPile) {
-        moveBonus = 10;
+        moveBonus = 20;
       }
     }
 
