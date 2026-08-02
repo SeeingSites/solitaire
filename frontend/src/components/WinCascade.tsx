@@ -95,18 +95,20 @@ function CascadeCardFace({ card }: { card: CardType }) {
     width: "var(--card-w)",
     height: "var(--card-h)",
     borderRadius: "var(--card-radius)",
-  };
+    borderWidth: "var(--card-border)",
+    overflow: "hidden",
+  } as React.CSSProperties;
 
   const innerStyle = {
-    width: "calc(var(--card-w) - 8px)",
-    height: "calc(var(--card-h) - 8px)",
+    width: "calc(var(--card-w) - var(--card-border) * 2 - 4px)",
+    height: "calc(var(--card-h) - var(--card-border) * 2 - 4px)",
     borderRadius: "calc(var(--card-radius) - 2px)",
   };
 
   if (!card.faceUp) {
     return (
       <div
-        className="card-back bg-gradient-to-br from-blue-800 to-blue-900 border-2 border-blue-700 shadow-lg flex items-center justify-center"
+        className="card-back bg-gradient-to-br from-blue-800 to-blue-900 border-blue-700 shadow-lg flex items-center justify-center"
         style={cardStyle}
       >
         <div
@@ -126,22 +128,26 @@ function CascadeCardFace({ card }: { card: CardType }) {
 
   return (
     <div
-      className="bg-white border-2 border-gray-300 shadow-lg flex flex-col justify-between p-0.5 select-none"
+      className="bg-white border-gray-300 shadow-lg flex flex-col justify-between select-none"
       style={cardStyle}
     >
-      <div className="flex flex-col items-start" style={{ color }}>
-        <span className="font-bold leading-none" style={fontRank}>
+      <div
+        className="flex flex-col items-start leading-none"
+        style={{ color, padding: "var(--card-pad)" }}
+      >
+        <span className="font-bold" style={fontRank}>
           {card.rank}
         </span>
-        <span className="leading-none" style={fontSuit}>
-          {symbol}
-        </span>
+        <span style={fontSuit}>{symbol}</span>
       </div>
       <div className="flex-1 flex items-center justify-center" style={{ color }}>
         <span style={fontCenter}>{symbol}</span>
       </div>
-      <div className="flex flex-col items-end rotate-180" style={{ color }}>
-        <span className="font-bold leading-none" style={fontRank}>
+      <div
+        className="flex flex-col items-end rotate-180 leading-none"
+        style={{ color, padding: "var(--card-pad)" }}
+      >
+        <span className="font-bold" style={fontRank}>
           {card.rank}
         </span>
         <span className="leading-none" style={fontSuit}>

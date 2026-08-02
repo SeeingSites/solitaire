@@ -15,6 +15,8 @@
   --card-gap-top: 16px;
   --card-gap-tableau: 8px;
   --card-radius: 8px;
+  --card-border: 2px;
+  --card-pad: 2px 3px;
   --card-font-rank: 0.875rem;
   --card-font-suit: 1.125rem;
   --card-font-center: 1.875rem;
@@ -29,6 +31,8 @@
     --card-gap-top: 4px;
     --card-gap-tableau: 3px;
     --card-radius: 5px;
+    --card-border: 1px;
+    --card-pad: 1px 2px;
     --card-font-rank: 0.6rem;
     --card-font-suit: 0.7rem;
     --card-font-center: 1.1rem;
@@ -44,6 +48,8 @@
     --card-gap-top: 8px;
     --card-gap-tableau: 5px;
     --card-radius: 6px;
+    --card-border: 1.5px;
+    --card-pad: 1px 2px;
     --card-font-rank: 0.7rem;
     --card-font-suit: 0.8rem;
     --card-font-center: 1.3rem;

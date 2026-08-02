@@ -27,11 +27,13 @@ const cardStyle = {
   width: "var(--card-w)",
   height: "var(--card-h)",
   borderRadius: "var(--card-radius)",
-};
+  borderWidth: "var(--card-border)",
+  overflow: "hidden",
+} as React.CSSProperties;
 
 const innerStyle = {
-  width: "calc(var(--card-w) - 8px)",
-  height: "calc(var(--card-h) - 8px)",
+  width: "calc(var(--card-w) - var(--card-border) * 2 - 4px)",
+  height: "calc(var(--card-h) - var(--card-border) * 2 - 4px)",
   borderRadius: "calc(var(--card-radius) - 2px)",
 };
 
@@ -57,7 +59,7 @@ export default function Card({
     return (
       <div
         className={`card-back bg-gradient-to-br from-blue-800 to-blue-900
-                   border-2 border-blue-700 shadow-lg flex items-center justify-center
+                   border-blue-700 shadow-lg flex items-center justify-center
                    ${className}`}
         style={cardStyle}
         onClick={onClick}
@@ -78,8 +80,8 @@ export default function Card({
   return (
     <div
       ref={setNodeRef}
-      className={`card bg-white border-2 border-gray-300 shadow-lg
-                 flex flex-col justify-between p-0.5 cursor-grab active:cursor-grabbing select-none
+      className={`card bg-white border-gray-300 shadow-lg
+                 flex flex-col justify-between cursor-grab active:cursor-grabbing select-none
                  ${isDragging ? "shadow-2xl scale-105" : "hover:shadow-xl hover:-translate-y-1"}
                  transition-all duration-150 ${className}`}
       style={{ ...cardStyle, ...style } as React.CSSProperties}
@@ -88,26 +90,28 @@ export default function Card({
       {...listeners}
       {...attributes}
     >
-      <div className={`flex flex-col items-start ${getSuitColor(card.suit)}`}>
-        <span className="font-bold leading-none" style={fontRank}>
+      <div
+        className={`flex flex-col items-start leading-none ${getSuitColor(card.suit)}`}
+        style={{ padding: "var(--card-pad)" }}
+      >
+        <span className="font-bold" style={fontRank}>
           {getRankDisplay(card.rank)}
         </span>
-        <span className="leading-none" style={fontSuit}>
-          {getSuitSymbol(card.suit)}
-        </span>
+        <span style={fontSuit}>{getSuitSymbol(card.suit)}</span>
       </div>
 
       <div className={`flex-1 flex items-center justify-center ${getSuitColor(card.suit)}`}>
         <span style={fontCenter}>{getSuitSymbol(card.suit)}</span>
       </div>
 
-      <div className={`flex flex-col items-end rotate-180 ${getSuitColor(card.suit)}`}>
-        <span className="font-bold leading-none" style={fontRank}>
+      <div
+        className={`flex flex-col items-end rotate-180 leading-none ${getSuitColor(card.suit)}`}
+        style={{ padding: "var(--card-pad)" }}
+      >
+        <span className="font-bold" style={fontRank}>
           {getRankDisplay(card.rank)}
         </span>
-        <span className="leading-none" style={fontSuit}>
-          {getSuitSymbol(card.suit)}
-        </span>
+        <span style={fontSuit}>{getSuitSymbol(card.suit)}</span>
       </div>
     </div>
   );
