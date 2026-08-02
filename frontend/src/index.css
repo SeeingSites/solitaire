@@ -10,7 +10,7 @@
   --panel-border: rgba(255, 255, 255, 0.1);
   /* Responsive card sizing: scale down on narrow screens */
   --card-w: 80px;
-  --card-h: 112px;
+  --card-h: 116px;
   --card-overlap: 25px;
   --card-gap-top: 16px;
   --card-gap-tableau: 8px;
@@ -43,7 +43,7 @@
 @media (min-width: 481px) and (max-width: 768px) {
   :root {
     --card-w: 56px;
-    --card-h: 78px;
+    --card-h: 82px;
     --card-overlap: 18px;
     --card-gap-top: 8px;
     --card-gap-tableau: 5px;
