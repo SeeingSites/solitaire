@@ -38,11 +38,6 @@ function App() {
 
         {/* Game Board */}
         <GameBoard />
-
-        {/* Footer */}
-        <footer className="text-center text-gray-500 text-xs mt-8 hidden sm:block">
-          Classic Klondike Solitaire
-        </footer>
       </div>
     </div>
   );

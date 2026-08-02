@@ -26,16 +26,16 @@
 @media (max-width: 480px) {
   :root {
     --card-w: 44px;
-    --card-h: 62px;
+    --card-h: 66px;
     --card-overlap: 14px;
     --card-gap-top: 4px;
     --card-gap-tableau: 3px;
     --card-radius: 5px;
     --card-border: 1px;
     --card-pad: 1px 2px;
-    --card-font-rank: 0.6rem;
-    --card-font-suit: 0.7rem;
-    --card-font-center: 1.1rem;
+    --card-font-rank: 0.55rem;
+    --card-font-suit: 0.65rem;
+    --card-font-center: 1rem;
   }
 }
 
