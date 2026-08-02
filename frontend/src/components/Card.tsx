@@ -23,6 +23,22 @@ function getSuitSymbol(suit: Suit): string {
   return SUIT_SYMBOLS[suit];
 }
 
+const cardStyle = {
+  width: "var(--card-w)",
+  height: "var(--card-h)",
+  borderRadius: "var(--card-radius)",
+};
+
+const innerStyle = {
+  width: "calc(var(--card-w) - 8px)",
+  height: "calc(var(--card-h) - 8px)",
+  borderRadius: "calc(var(--card-radius) - 2px)",
+};
+
+const fontRank = { fontSize: "var(--card-font-rank)" };
+const fontSuit = { fontSize: "var(--card-font-suit)" };
+const fontCenter = { fontSize: "var(--card-font-center)" };
+
 export default function Card({
   card,
   draggableId,
@@ -40,14 +56,20 @@ export default function Card({
   if (!card.faceUp) {
     return (
       <div
-        className={`card-back w-20 h-28 rounded-lg bg-gradient-to-br from-blue-800 to-blue-900
+        className={`card-back bg-gradient-to-br from-blue-800 to-blue-900
                    border-2 border-blue-700 shadow-lg flex items-center justify-center
                    ${className}`}
+        style={cardStyle}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
       >
-        <div className="w-16 h-24 rounded border border-blue-600 flex items-center justify-center">
-          <span className="text-blue-400 text-2xl">♠</span>
+        <div
+          className="rounded border border-blue-600 flex items-center justify-center"
+          style={innerStyle}
+        >
+          <span className="text-blue-400" style={fontCenter}>
+            ♠
+          </span>
         </div>
       </div>
     );
@@ -56,28 +78,36 @@ export default function Card({
   return (
     <div
       ref={setNodeRef}
-      className={`card w-20 h-28 rounded-lg bg-white border-2 border-gray-300 shadow-lg
-                 flex flex-col justify-between p-1 cursor-grab active:cursor-grabbing select-none
+      className={`card bg-white border-2 border-gray-300 shadow-lg
+                 flex flex-col justify-between p-0.5 cursor-grab active:cursor-grabbing select-none
                  ${isDragging ? "shadow-2xl scale-105" : "hover:shadow-xl hover:-translate-y-1"}
                  transition-all duration-150 ${className}`}
-      style={style}
+      style={{ ...cardStyle, ...style } as React.CSSProperties}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       {...listeners}
       {...attributes}
     >
       <div className={`flex flex-col items-start ${getSuitColor(card.suit)}`}>
-        <span className="text-sm font-bold leading-none">{getRankDisplay(card.rank)}</span>
-        <span className="text-lg leading-none">{getSuitSymbol(card.suit)}</span>
+        <span className="font-bold leading-none" style={fontRank}>
+          {getRankDisplay(card.rank)}
+        </span>
+        <span className="leading-none" style={fontSuit}>
+          {getSuitSymbol(card.suit)}
+        </span>
       </div>
 
       <div className={`flex-1 flex items-center justify-center ${getSuitColor(card.suit)}`}>
-        <span className="text-3xl">{getSuitSymbol(card.suit)}</span>
+        <span style={fontCenter}>{getSuitSymbol(card.suit)}</span>
       </div>
 
       <div className={`flex flex-col items-end rotate-180 ${getSuitColor(card.suit)}`}>
-        <span className="text-sm font-bold leading-none">{getRankDisplay(card.rank)}</span>
-        <span className="text-lg leading-none">{getSuitSymbol(card.suit)}</span>
+        <span className="font-bold leading-none" style={fontRank}>
+          {getRankDisplay(card.rank)}
+        </span>
+        <span className="leading-none" style={fontSuit}>
+          {getSuitSymbol(card.suit)}
+        </span>
       </div>
     </div>
   );

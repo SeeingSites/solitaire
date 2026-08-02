@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGameStore } from "../store/useGameStore";
 import { Card as CardType, SolitaireState, Suit } from "../game/types";
-import { SUIT_SYMBOLS } from "../game/constants";
+import { SUIT_SYMBOLS, getCardWidth, getCardHeight, getCardOverlap } from "../game/constants";
 import { isRed } from "../game/Deck";
 
-const CARD_W = 80;
-const CARD_H = 112;
-const OVERLAP = 25;
 const GAP = 16;
 const SPACER = 32;
 const FOUNDATION_COUNT = 4;
@@ -32,6 +29,9 @@ function getSuitColor(suit: Suit): string {
 
 function calculateCardPositions(state: SolitaireState): CascadeCard[] {
   const vw = window.innerWidth;
+  const CARD_W = getCardWidth();
+  const CARD_H = getCardHeight();
+  const OVERLAP = getCardOverlap();
 
   const topRowWidth = 6 * CARD_W + 5 * GAP + SPACER;
   const topRowStartX = (vw - topRowWidth) / 2;
@@ -41,7 +41,7 @@ function calculateCardPositions(state: SolitaireState): CascadeCard[] {
   const wasteX = stockX + CARD_W + GAP;
   const foundationStartX = wasteX + CARD_W + GAP + SPACER + GAP;
 
-  const tableauGap = 8;
+  const tableauGap = Math.max(2, Math.round(CARD_W * 0.06));
   const tableauWidth = TABLEAU_COUNT * CARD_W + (TABLEAU_COUNT - 1) * tableauGap;
   const tableauStartX = (vw - tableauWidth) / 2;
   const tableauRowY = topRowY + CARD_H + 24;
@@ -87,11 +87,35 @@ function calculateCardPositions(state: SolitaireState): CascadeCard[] {
 }
 
 function CascadeCardFace({ card }: { card: CardType }) {
+  const fontCenter = { fontSize: "var(--card-font-center)" };
+  const fontRank = { fontSize: "var(--card-font-rank)" };
+  const fontSuit = { fontSize: "var(--card-font-suit)" };
+
+  const cardStyle = {
+    width: "var(--card-w)",
+    height: "var(--card-h)",
+    borderRadius: "var(--card-radius)",
+  };
+
+  const innerStyle = {
+    width: "calc(var(--card-w) - 8px)",
+    height: "calc(var(--card-h) - 8px)",
+    borderRadius: "calc(var(--card-radius) - 2px)",
+  };
+
   if (!card.faceUp) {
     return (
-      <div className="card-back w-20 h-28 rounded-lg bg-gradient-to-br from-blue-800 to-blue-900 border-2 border-blue-700 shadow-lg flex items-center justify-center">
-        <div className="w-16 h-24 rounded border border-blue-600 flex items-center justify-center">
-          <span className="text-blue-400 text-2xl">&#9824;</span>
+      <div
+        className="card-back bg-gradient-to-br from-blue-800 to-blue-900 border-2 border-blue-700 shadow-lg flex items-center justify-center"
+        style={cardStyle}
+      >
+        <div
+          className="rounded border border-blue-600 flex items-center justify-center"
+          style={innerStyle}
+        >
+          <span className="text-blue-400" style={fontCenter}>
+            &#9824;
+          </span>
         </div>
       </div>
     );
@@ -101,17 +125,28 @@ function CascadeCardFace({ card }: { card: CardType }) {
   const symbol = getSuitSymbol(card.suit);
 
   return (
-    <div className="w-20 h-28 rounded-lg bg-white border-2 border-gray-300 shadow-lg flex flex-col justify-between p-1 select-none">
+    <div
+      className="bg-white border-2 border-gray-300 shadow-lg flex flex-col justify-between p-0.5 select-none"
+      style={cardStyle}
+    >
       <div className="flex flex-col items-start" style={{ color }}>
-        <span className="text-sm font-bold leading-none">{card.rank}</span>
-        <span className="text-lg leading-none">{symbol}</span>
+        <span className="font-bold leading-none" style={fontRank}>
+          {card.rank}
+        </span>
+        <span className="leading-none" style={fontSuit}>
+          {symbol}
+        </span>
       </div>
       <div className="flex-1 flex items-center justify-center" style={{ color }}>
-        <span className="text-3xl">{symbol}</span>
+        <span style={fontCenter}>{symbol}</span>
       </div>
       <div className="flex flex-col items-end rotate-180" style={{ color }}>
-        <span className="text-sm font-bold leading-none">{card.rank}</span>
-        <span className="text-lg leading-none">{symbol}</span>
+        <span className="font-bold leading-none" style={fontRank}>
+          {card.rank}
+        </span>
+        <span className="leading-none" style={fontSuit}>
+          {symbol}
+        </span>
       </div>
     </div>
   );

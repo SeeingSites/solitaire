@@ -8,6 +8,46 @@
   --body-text: #f5f5f5;
   --panel-bg: rgba(0, 0, 0, 0.3);
   --panel-border: rgba(255, 255, 255, 0.1);
+  /* Responsive card sizing: scale down on narrow screens */
+  --card-w: 80px;
+  --card-h: 112px;
+  --card-overlap: 25px;
+  --card-gap-top: 16px;
+  --card-gap-tableau: 8px;
+  --card-radius: 8px;
+  --card-font-rank: 0.875rem;
+  --card-font-suit: 1.125rem;
+  --card-font-center: 1.875rem;
+}
+
+/* Phone portrait: scale cards to fit 375px width */
+@media (max-width: 480px) {
+  :root {
+    --card-w: 44px;
+    --card-h: 62px;
+    --card-overlap: 14px;
+    --card-gap-top: 4px;
+    --card-gap-tableau: 3px;
+    --card-radius: 5px;
+    --card-font-rank: 0.6rem;
+    --card-font-suit: 0.7rem;
+    --card-font-center: 1.1rem;
+  }
+}
+
+/* Small tablets / large phones landscape */
+@media (min-width: 481px) and (max-width: 768px) {
+  :root {
+    --card-w: 56px;
+    --card-h: 78px;
+    --card-overlap: 18px;
+    --card-gap-top: 8px;
+    --card-gap-tableau: 5px;
+    --card-radius: 6px;
+    --card-font-rank: 0.7rem;
+    --card-font-suit: 0.8rem;
+    --card-font-center: 1.3rem;
+  }
 }
 
 .theme-light {
@@ -25,6 +65,7 @@ body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 /* Card styles */
@@ -129,8 +170,8 @@ body {
 
 .cascade-card {
   position: absolute;
-  width: 80px;
-  height: 112px;
+  width: var(--card-w);
+  height: var(--card-h);
   pointer-events: none;
   will-change: transform, opacity;
 }

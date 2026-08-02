@@ -8,9 +8,9 @@ function App() {
     <div
       className={`min-h-screen ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"}`}
     >
-      <div className="max-w-7xl mx-auto p-4">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 pt-2 sm:pt-4">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+        <header className="flex flex-col sm:flex-row items-center justify-between mb-3 sm:mb-6 gap-2 sm:gap-4">
           <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider text-amber-500 uppercase font-display">
             Solitaire
           </h1>

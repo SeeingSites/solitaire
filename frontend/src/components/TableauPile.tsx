@@ -1,7 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
 import Card from "./Card";
 import { Card as CardType } from "../game/types";
-import { CARD_OVERLAP, CARD_HEIGHT } from "../game/constants";
 
 interface TableauPileProps {
   cards: CardType[];
@@ -10,6 +9,11 @@ interface TableauPileProps {
   onCardDoubleClick?: (cardIndex: number) => void;
   isDropTarget?: boolean;
 }
+
+const cardStyle = {
+  width: "var(--card-w)",
+  borderRadius: "var(--card-radius)",
+};
 
 export default function TableauPile({
   cards,
@@ -23,19 +27,20 @@ export default function TableauPile({
   });
 
   const isActive = isDropTarget || isOver;
-  const pileHeight =
-    cards.length > 0 ? (cards.length - 1) * CARD_OVERLAP + CARD_HEIGHT : CARD_HEIGHT;
 
   return (
     <div
       ref={setNodeRef}
-      className={`relative w-20 rounded-lg border-2 border-dashed
+      className={`relative rounded-lg border-2 border-dashed
                  ${isActive ? "border-green-500 bg-green-500/10" : "border-gray-600/50 bg-transparent"}`}
-      style={{ height: `${pileHeight}px` }}
+      style={{
+        ...cardStyle,
+        minHeight: "var(--card-h)",
+      }}
     >
       {cards.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-gray-600 text-xs">{pileIndex + 1}</span>
+          <span className="text-gray-600 text-[10px]">{pileIndex + 1}</span>
         </div>
       )}
 
@@ -44,7 +49,7 @@ export default function TableauPile({
           key={card.id}
           className="absolute"
           style={{
-            top: `${index * CARD_OVERLAP}px`,
+            top: `calc(var(--card-overlap) * ${index})`,
             left: 0,
             zIndex: index,
           }}

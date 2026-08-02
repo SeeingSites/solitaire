@@ -143,9 +143,9 @@ export default function GameBoard() {
 
   return (
     <DragDropProvider>
-      <div className="flex flex-col gap-6 p-4">
+      <div className="flex flex-col gap-4 sm:gap-6 p-2 sm:p-4">
         {/* Top row: Stock, Waste, Foundations */}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center items-center gap-[var(--card-gap-top)]">
           <StockPile count={state.stock.length} onClick={handleStockClick} />
           <WastePile
             cards={state.waste}
@@ -153,7 +153,7 @@ export default function GameBoard() {
             onDoubleClick={handleWasteDoubleClick}
             isDropTarget={selectedCard?.type === "waste" && !isDemoMode}
           />
-          <div className="w-8" /> {/* Spacer */}
+          <div className="w-2 sm:w-4" /> {/* Spacer */}
           {state.foundations.map((foundation, index) => (
             <FoundationPile
               key={`foundation-${index}`}
@@ -171,7 +171,7 @@ export default function GameBoard() {
         </div>
 
         {/* Tableau */}
-        <div className="flex justify-center gap-2">
+        <div className="flex justify-center gap-[var(--card-gap-tableau)]">
           {state.tableau.map((pile, pileIndex) => (
             <TableauPile
               key={`tableau-${pileIndex}`}
