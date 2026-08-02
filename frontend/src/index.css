@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme CSS custom properties */
+:root {
+  --body-gradient: linear-gradient(135deg, #064e3b, #065f46, #047857);
+  --body-text: #f5f5f5;
+  --panel-bg: rgba(0, 0, 0, 0.3);
+  --panel-border: rgba(255, 255, 255, 0.1);
+}
+
+.theme-light {
+  --body-gradient: linear-gradient(135deg, #059669, #047857, #065f46);
+  --body-text: #ffffff;
+  --panel-bg: rgba(255, 255, 255, 0.2);
+  --panel-border: rgba(255, 255, 255, 0.3);
+}
+
+/* Base styles */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--body-gradient);
+  color: var(--body-text);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Card styles */
+.card {
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Card back pattern */
+.card-back {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  background-image: 
+    linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 5px,
+      rgba(255, 255, 255, 0.1) 5px,
+      rgba(255, 255, 255, 0.1) 10px
+    );
+}
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.5;
+  transform: scale(1.05);
+  z-index: 100;
+}
+
+.drag-over {
+  border-color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+/* Pile styles */
+.pile-empty {
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Win cascade animations */
+@keyframes cascade-1 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  15% { transform: translate(120px, -250px) rotate(35deg); }
+  30% { transform: translate(-80px, -120px) rotate(-20deg); }
+  50% { transform: translate(200px, 200px) rotate(50deg); }
+  70% { transform: translate(-60px, 450px) rotate(-30deg); }
+  85% { transform: translate(100px, 700px) rotate(40deg); opacity: 0.6; }
+  100% { transform: translate(80px, 1000px) rotate(55deg); opacity: 0; }
+}
+
+@keyframes cascade-2 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  15% { transform: translate(-150px, -200px) rotate(-40deg); }
+  35% { transform: translate(100px, -80px) rotate(25deg); }
+  55% { transform: translate(-180px, 250px) rotate(-45deg); }
+  75% { transform: translate(80px, 500px) rotate(35deg); opacity: 0.7; }
+  100% { transform: translate(-60px, 1000px) rotate(-50deg); opacity: 0; }
+}
+
+@keyframes cascade-3 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  20% { transform: translate(80px, -180px) rotate(60deg); }
+  40% { transform: translate(-120px, -60px) rotate(120deg); }
+  60% { transform: translate(160px, 300px) rotate(200deg); }
+  80% { transform: translate(-40px, 600px) rotate(280deg); opacity: 0.5; }
+  100% { transform: translate(60px, 1000px) rotate(360deg); opacity: 0; }
+}
+
+@keyframes cascade-4 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  12% { transform: translate(40px, -300px) rotate(15deg); }
+  30% { transform: translate(-160px, -150px) rotate(-35deg); }
+  50% { transform: translate(120px, 100px) rotate(45deg); }
+  70% { transform: translate(-100px, 400px) rotate(-25deg); }
+  90% { transform: translate(60px, 750px) rotate(30deg); opacity: 0.4; }
+  100% { transform: translate(40px, 1000px) rotate(40deg); opacity: 0; }
+}
+
+@keyframes cascade-5 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  18% { transform: translate(200px, -150px) rotate(30deg); }
+  35% { transform: translate(-100px, -250px) rotate(-40deg); }
+  55% { transform: translate(180px, 50px) rotate(55deg); }
+  75% { transform: translate(-80px, 350px) rotate(-20deg); opacity: 0.6; }
+  100% { transform: translate(120px, 1000px) rotate(45deg); opacity: 0; }
+}
+
+@keyframes cascade-6 {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  15% { transform: translate(-100px, -280px) rotate(-50deg); }
+  30% { transform: translate(150px, -100px) rotate(30deg); }
+  45% { transform: translate(-200px, 100px) rotate(-60deg); }
+  65% { transform: translate(100px, 350px) rotate(40deg); }
+  80% { transform: translate(-50px, 650px) rotate(-25deg); opacity: 0.5; }
+  100% { transform: translate(80px, 1000px) rotate(35deg); opacity: 0; }
+}
+
+.cascade-card {
+  position: absolute;
+  width: 80px;
+  height: 112px;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* Font display */
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
