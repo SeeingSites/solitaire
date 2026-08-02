@@ -16,6 +16,9 @@ export type MoveSimulator = (move: {
 const CYCLE_WINDOW = 40;
 const ROLLOUT_DEPTH = 20;
 const ROLLOUT_TOP_N = 4;
+const MOVE_REPEAT_WINDOW = 10;
+const STATE_REPEAT_PENALTY = -200;
+const PRODUCTIVE_THRESHOLD = 5;
 
 export function hashState(state: SolitaireState): string {
   const parts: string[] = [];
@@ -61,6 +64,32 @@ function isReverseMove(
     locationsEqual(prev.from, move.to) &&
     locationsEqual(prev.to, move.from)
   );
+}
+
+function moveFingerprint(move: { from: CardLocation; to: CardLocation }): string {
+  const from =
+    move.from.type === "tableau"
+      ? `t${(move.from as { type: "tableau"; pileIndex: number }).pileIndex}`
+      : move.from.type;
+  const to =
+    move.to.type === "tableau"
+      ? `t${(move.to as { type: "tableau"; pileIndex: number }).pileIndex}`
+      : move.to.type;
+  return `${from}→${to}`;
+}
+
+function isRepeatMovePattern(
+  move: { from: CardLocation; to: CardLocation },
+  recentMoves: Array<{ from: CardLocation; to: CardLocation }>,
+): boolean {
+  const fp = moveFingerprint(move);
+  let count = 0;
+  const checkLen = Math.min(recentMoves.length, MOVE_REPEAT_WINDOW);
+  for (let i = recentMoves.length - 1; i >= recentMoves.length - checkLen && i >= 0; i--) {
+    if (moveFingerprint(recentMoves[i]) === fp) count++;
+    if (count >= 2) return true;
+  }
+  return false;
 }
 
 function countFaceDown(tableau: Card[][]): number {
@@ -249,6 +278,8 @@ export function findBestMove(
     move: { from: CardLocation; to: CardLocation };
     hash: string;
     isCycle: boolean;
+    isStateRepeat: boolean;
+    isRepeatPattern: boolean;
     score: number;
     isUnproductive: boolean;
   }> = [];
@@ -260,6 +291,8 @@ export function findBestMove(
     const reverse = isReverseMove(move, ctx.recentMoves);
     const hash = hashState(resultState);
     const hashCycle = recentStateSet.has(hash);
+    const stateRepeat = hashCycle;
+    const repeatPattern = isRepeatMovePattern(move, ctx.recentMoves);
 
     let willFlipCard = false;
     let willEmptyPile = false;
@@ -343,14 +376,23 @@ export function findBestMove(
       }
     }
 
-    const shufflingPenalty = isUnproductiveTableauMove
-      ? -50 - Math.min(ctx.movesSinceFoundation * 3, 60)
-      : 0;
+    let shufflingPenalty = 0;
+    if (isUnproductiveTableauMove) {
+      shufflingPenalty = -50 - Math.min(ctx.movesSinceFoundation * 3, 60);
+    }
+    if (stateRepeat) {
+      shufflingPenalty += STATE_REPEAT_PENALTY;
+    }
+    if (repeatPattern) {
+      shufflingPenalty -= 80;
+    }
 
     simulations.push({
       move,
       hash,
       isCycle: reverse || hashCycle,
+      isStateRepeat: stateRepeat,
+      isRepeatPattern: repeatPattern,
       isUnproductive: isUnproductiveTableauMove,
       score: evaluateState(resultState, state) + moveBonus + shufflingPenalty,
     });
@@ -360,9 +402,16 @@ export function findBestMove(
 
   simulations.sort((a, b) => b.score - a.score);
 
-  if (ctx.movesSinceFoundation > 8) {
-    const productiveMove = simulations.find((s) => !s.isCycle && !s.isUnproductive);
+  if (ctx.movesSinceFoundation >= PRODUCTIVE_THRESHOLD) {
+    const productiveMove = simulations.find(
+      (s) => !s.isCycle && !s.isUnproductive && !s.isRepeatPattern,
+    );
     if (productiveMove) return productiveMove.move;
+  }
+
+  if (ctx.movesSinceFoundation >= PRODUCTIVE_THRESHOLD) {
+    const anyNonRepeat = simulations.find((s) => !s.isCycle && !s.isRepeatPattern);
+    if (anyNonRepeat) return anyNonRepeat.move;
   }
 
   const bestNonCyclic = simulations.find((s) => !s.isCycle);
@@ -373,6 +422,7 @@ function greedyQuickSelect(
   state: SolitaireState,
   simulate: MoveSimulator,
   moves: Array<{ from: CardLocation; to: CardLocation }>,
+  recentMoves: Array<{ from: CardLocation; to: CardLocation }>,
 ): { from: CardLocation; to: CardLocation } | null {
   let bestScore = -Infinity;
   let bestMove: { from: CardLocation; to: CardLocation } | null = null;
@@ -403,8 +453,12 @@ function greedyQuickSelect(
       } else if (willEmptyPile) {
         moveBonus = 60;
       } else {
-        moveBonus = -40;
+        moveBonus = -60;
       }
+    }
+
+    if (isRepeatMovePattern(move, recentMoves)) {
+      moveBonus -= 100;
     }
 
     const score = quickEvaluate(result) + moveBonus;
@@ -431,6 +485,7 @@ export function rolloutBestMove(
     move: { from: CardLocation; to: CardLocation };
     immediateScore: number;
     isCycle: boolean;
+    isStateRepeat: boolean;
   }> = [];
 
   for (const move of legalMoves) {
@@ -440,6 +495,8 @@ export function rolloutBestMove(
     const reverse = isReverseMove(move, context.recentMoves);
     const hash = hashState(resultState);
     const hashCycle = recentStateSet.has(hash);
+    const stateRepeat = hashCycle;
+    const repeatPattern = isRepeatMovePattern(move, context.recentMoves);
 
     let moveBonus = 0;
     if (move.from.type === "waste" && move.to.type === "foundation") {
@@ -482,10 +539,15 @@ export function rolloutBestMove(
       }
     }
 
+    let totalBonus = moveBonus;
+    if (stateRepeat) totalBonus += STATE_REPEAT_PENALTY;
+    if (repeatPattern) totalBonus -= 80;
+
     candidates.push({
       move,
-      immediateScore: evaluateState(resultState, currentState) + moveBonus,
+      immediateScore: evaluateState(resultState, currentState) + totalBonus,
       isCycle: reverse || hashCycle,
+      isStateRepeat: stateRepeat,
     });
   }
 
@@ -493,9 +555,11 @@ export function rolloutBestMove(
 
   candidates.sort((a, b) => b.immediateScore - a.immediateScore);
 
-  const nonCyclic = candidates.filter((c) => !c.isCycle);
-  const pool = nonCyclic.length > 0 ? nonCyclic : candidates;
-  const top = pool.slice(0, Math.min(ROLLOUT_TOP_N, pool.length));
+  const nonCycleNonRepeat = candidates.filter((c) => !c.isCycle && !c.isStateRepeat);
+  const pool =
+    nonCycleNonRepeat.length > 0 ? nonCycleNonRepeat : candidates.filter((c) => !c.isCycle);
+  const top =
+    pool.length > 0 ? pool.slice(0, Math.min(ROLLOUT_TOP_N, pool.length)) : candidates.slice(0, 1);
 
   if (top.length <= 1) return top[0].move;
 
@@ -533,7 +597,7 @@ export function rolloutBestMove(
         break;
       }
 
-      const greedyMove = greedyQuickSelect(current, simulate, moves);
+      const greedyMove = greedyQuickSelect(current, simulate, moves, context.recentMoves);
       if (!greedyMove) break;
 
       const mok = engine.moveCard(greedyMove.from, greedyMove.to);

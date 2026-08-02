@@ -29,7 +29,6 @@ const cardStyle = {
   borderRadius: "var(--card-radius)",
   borderWidth: "var(--card-border)",
   borderStyle: "solid",
-  overflow: "hidden",
 } as React.CSSProperties;
 
 const innerStyle = {
