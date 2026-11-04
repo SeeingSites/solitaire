@@ -189,28 +189,30 @@ export async function playDemoUntilDone(
 ): Promise<"won" | "stalemate" | "timeout"> {
   await watchDemoButton(page).click();
 
+  // A demo-mode win shows "Demo Complete!"; a human win shows "You Win!".
+  const win = page.getByRole("heading", { name: /You Win!|Demo Complete!/ });
+  const stalemate = page.getByRole("heading", { name: "Stalemate" });
+  const outcome = async (): Promise<"won" | "stalemate" | null> => {
+    if (await win.isVisible().catch(() => false)) return "won";
+    if (await stalemate.isVisible().catch(() => false)) return "stalemate";
+    return null;
+  };
+
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    // A demo-mode win shows "Demo Complete!"; a human win shows "You Win!".
-    const winVisible = await page
-      .getByRole("heading", { name: /You Win!|Demo Complete!/ })
-      .isVisible()
-      .catch(() => false);
-    if (winVisible) {
-      await stopDemoButton(page).click().catch(() => {});
-      return "won";
-    }
-    const stalemateVisible = await page
-      .getByText("Stalemate")
-      .isVisible()
-      .catch(() => false);
-    if (stalemateVisible) return "stalemate";
+    const result = await outcome();
+    if (result) return result;
 
-    const stopVisible = await stopDemoButton(page).isVisible().catch(() => false);
-    if (!stopVisible) {
-      await page.waitForTimeout(500);
-      const stillNoDemo = !(await stopDemoButton(page).isVisible().catch(() => false));
-      if (stillNoDemo) return "timeout";
+    if (!(await stopDemoButton(page).isVisible().catch(() => false))) {
+      // The demo stopped. A win plays the card cascade before its overlay
+      // appears, so give the end screen time to show up before giving up.
+      const deadline = Date.now() + 20_000;
+      while (Date.now() < deadline) {
+        const late = await outcome();
+        if (late) return late;
+        await page.waitForTimeout(250);
+      }
+      return "timeout";
     }
     await page.waitForTimeout(200);
   }
@@ -271,6 +273,8 @@ export async function expectGameInProgress(page: Page): Promise<void> {
 }
 
 export async function newGame(page: Page): Promise<void> {
-  await newGameButton(page).click();
+  // The stalemate overlay has its own "New Game" button covering the header's;
+  // it renders later in the DOM, so .last() is whichever one is clickable.
+  await newGameButton(page).last().click();
   await page.waitForTimeout(200);
 }
