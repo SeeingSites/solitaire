@@ -18,6 +18,7 @@ const innerStyle = {
 export default function StockPile({ count, onClick }: StockPileProps) {
   return (
     <div
+      data-testid="stock-pile"
       className={`relative border-2 border-gray-600
                  ${count > 0 ? "bg-gradient-to-br from-blue-800 to-blue-900 cursor-pointer hover:shadow-lg" : "bg-gray-800/50"}
                  flex items-center justify-center transition-all duration-150`}
@@ -34,7 +35,10 @@ export default function StockPile({ count, onClick }: StockPileProps) {
               ♠
             </span>
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-blue-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          <div
+            data-testid="stock-count"
+            className="absolute -bottom-1 -right-1 bg-blue-700 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+          >
             {count}
           </div>
         </>

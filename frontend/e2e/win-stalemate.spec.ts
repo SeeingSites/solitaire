@@ -8,6 +8,9 @@ import {
 } from "./helpers";
 
 test.describe("Win / Stalemate Detection", () => {
+  // playDemoUntilDone() waits up to 120s for a game to finish.
+  test.describe.configure({ timeout: 180_000 });
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await expectInitialState(page);

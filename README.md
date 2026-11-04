@@ -166,7 +166,9 @@ solitaire/
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
-- `npm test` - Run unit tests
+- `npm test` - Run unit tests (fast: AI checks over a few games)
+- `npm run test:sim` - Full AI statistical simulations (hundreds of games, 10+ min)
+- `npm run test:e2e` - Playwright end-to-end tests
 - `npm run lint` - Run ESLint
 - `npm run format` - Run Prettier
 

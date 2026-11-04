@@ -20,6 +20,8 @@ export type MoveRecord = {
   to: CardLocation;
   flippedCard?: Card;
   cardCount: number;
+  /** Stock draw that first recycled the waste pile back into the stock. */
+  reshuffled?: boolean;
 };
 
 export interface SolitaireState {

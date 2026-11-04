@@ -6,25 +6,24 @@ import { type Page, type Locator, expect } from "@playwright/test";
 
 /** The stock pile (blue gradient card-back with spade symbol). */
 export function stockPile(page: Page): Locator {
-  return page.locator(".bg-gradient-to-br.from-blue-800").first();
+  return page.getByTestId("stock-pile");
 }
 
 /** The waste droppable area. Identified as the first dashed-border div in the top row that contains "Waste" or a card. */
 export function wastePile(page: Page): Locator {
   // Waste is the second child in the top flex row (after stock)
-  return page.locator(".flex.justify-center.gap-4 > div:nth-child(2)");
+  return page.getByTestId("top-row").locator("> div:nth-child(2)");
 }
 
 /** A specific foundation pile by index (0-3). Each shows a suit symbol. */
 export function foundationPile(page: Page, index: number): Locator {
   // Layout: stock(1) waste(2) spacer(3) foundation-0(4) foundation-1(5) foundation-2(6) foundation-3(7)
-  return page.locator(`.flex.justify-center.gap-4 > div:nth-child(${index + 4})`);
+  return page.getByTestId("top-row").locator(`> div:nth-child(${index + 4})`);
 }
 
 /** A specific tableau pile by index (0-6). Each has border-dashed and varying height. */
 export function tableauPile(page: Page, index: number): Locator {
-  // Tableau is the second flex.justify-center.gap-2 container
-  return page.locator(".flex.justify-center.gap-2").last().locator(`> div:nth-child(${index + 1})`);
+    return page.getByTestId("tableau-row").locator(`> div:nth-child(${index + 1})`);
 }
 
 /** A face-up draggable card by its visible text content (e.g. "A♠"). */
@@ -90,7 +89,7 @@ export async function getMoveCount(page: Page): Promise<number> {
 }
 
 export async function getStockCount(page: Page): Promise<number> {
-  const badge = page.locator(".bg-blue-700.text-white.text-xs");
+  const badge = page.getByTestId("stock-count");
   if ((await badge.count()) === 0) return 0;
   const text = await badge.textContent();
   return text ? parseInt(text, 10) : 0;
@@ -251,7 +250,7 @@ export async function expectInitialState(page: Page): Promise<void> {
   await expect(statusText(page)).toContainText("Stock: 24");
   await expect(statusText(page)).toContainText("Waste: 0");
   // 7 tableau piles (each with dashed border)
-  const tableauContainer = page.locator(".flex.justify-center.gap-2").last();
+  const tableauContainer = page.getByTestId("tableau-row");
   await expect(tableauContainer).toBeVisible();
   const pileCount = await tableauContainer.locator("> div").count();
   expect(pileCount).toBe(7);
