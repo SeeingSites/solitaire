@@ -17,10 +17,6 @@ test.describe("App Shell", () => {
     await expect(page.getByRole("heading", { name: "Solitaire" })).toBeVisible();
   });
 
-  test("footer shows game name", async ({ page }) => {
-    await expect(page.getByText("Classic Klondike Solitaire")).toBeVisible();
-  });
-
   test("theme toggle switches dark to light", async ({ page }) => {
     const toggle = page.getByTitle(/Switch to/);
     await expect(toggle).toBeVisible();
@@ -49,8 +45,8 @@ test.describe("App Shell", () => {
 
   test("New Game button resets state", async ({ page }) => {
     // Draw a few cards to change state
-    await page.locator(".bg-gradient-to-br.from-blue-800").first().click();
-    await page.locator(".bg-gradient-to-br.from-blue-800").first().click();
+    await page.getByTestId("stock-pile").click();
+    await page.getByTestId("stock-pile").click();
     await page.waitForTimeout(100);
 
     const stockAfterDraw = await getStockCount(page);

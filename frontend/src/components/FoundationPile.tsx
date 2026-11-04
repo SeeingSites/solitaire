@@ -32,6 +32,8 @@ export default function FoundationPile({
   return (
     <div
       ref={setNodeRef}
+      data-testid={`foundation-${index}`}
+      data-count={cards.length}
       className={`relative rounded-lg border-2 border-dashed
                  ${isActive ? "border-green-500 bg-green-500/10" : "border-gray-600 bg-gray-800/50"}
                  flex items-center justify-center cursor-pointer`}

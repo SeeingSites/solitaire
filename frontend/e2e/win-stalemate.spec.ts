@@ -8,16 +8,19 @@ import {
 } from "./helpers";
 
 test.describe("Win / Stalemate Detection", () => {
+  // playDemoUntilDone() waits up to 120s for a game to finish.
+  test.describe.configure({ timeout: 180_000 });
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await expectInitialState(page);
   });
 
-  test("win shows You Win message", async ({ page }) => {
+  test("demo win shows the completion message", async ({ page }) => {
     const result = await playDemoUntilDone(page, 120_000);
 
     if (result === "won") {
-      await expect(page.getByText("You Win!")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Demo Complete!" })).toBeVisible();
     }
     expect(true).toBe(true);
   });

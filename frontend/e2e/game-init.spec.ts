@@ -19,7 +19,7 @@ test.describe("Game Initialization", () => {
   });
 
   test("new game deals 7 tableau piles", async ({ page }) => {
-    const tableauContainer = page.locator(".flex.justify-center.gap-2").last();
+    const tableauContainer = page.getByTestId("tableau-row");
     const pileCount = await tableauContainer.locator("> div").count();
     expect(pileCount).toBe(7);
   });

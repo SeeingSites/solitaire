@@ -6,25 +6,24 @@ import { type Page, type Locator, expect } from "@playwright/test";
 
 /** The stock pile (blue gradient card-back with spade symbol). */
 export function stockPile(page: Page): Locator {
-  return page.locator(".bg-gradient-to-br.from-blue-800").first();
+  return page.getByTestId("stock-pile");
 }
 
 /** The waste droppable area. Identified as the first dashed-border div in the top row that contains "Waste" or a card. */
 export function wastePile(page: Page): Locator {
   // Waste is the second child in the top flex row (after stock)
-  return page.locator(".flex.justify-center.gap-4 > div:nth-child(2)");
+  return page.getByTestId("top-row").locator("> div:nth-child(2)");
 }
 
 /** A specific foundation pile by index (0-3). Each shows a suit symbol. */
 export function foundationPile(page: Page, index: number): Locator {
   // Layout: stock(1) waste(2) spacer(3) foundation-0(4) foundation-1(5) foundation-2(6) foundation-3(7)
-  return page.locator(`.flex.justify-center.gap-4 > div:nth-child(${index + 4})`);
+  return page.getByTestId("top-row").locator(`> div:nth-child(${index + 4})`);
 }
 
 /** A specific tableau pile by index (0-6). Each has border-dashed and varying height. */
 export function tableauPile(page: Page, index: number): Locator {
-  // Tableau is the second flex.justify-center.gap-2 container
-  return page.locator(".flex.justify-center.gap-2").last().locator(`> div:nth-child(${index + 1})`);
+    return page.getByTestId("tableau-row").locator(`> div:nth-child(${index + 1})`);
 }
 
 /** A face-up draggable card by its visible text content (e.g. "A♠"). */
@@ -90,7 +89,7 @@ export async function getMoveCount(page: Page): Promise<number> {
 }
 
 export async function getStockCount(page: Page): Promise<number> {
-  const badge = page.locator(".bg-blue-700.text-white.text-xs");
+  const badge = page.getByTestId("stock-count");
   if ((await badge.count()) === 0) return 0;
   const text = await badge.textContent();
   return text ? parseInt(text, 10) : 0;
@@ -103,10 +102,10 @@ export async function getWasteCount(page: Page): Promise<number> {
 }
 
 export async function getFoundationCardCount(page: Page): Promise<number> {
+  // Foundations render only their top card, so read the real pile size.
   let count = 0;
   for (let i = 0; i < 4; i++) {
-    const cards = foundationPile(page, i).locator('[aria-roledescription="draggable"], .card-back');
-    count += await cards.count();
+    count += Number(await page.getByTestId(`foundation-${i}`).getAttribute("data-count"));
   }
   return count;
 }
@@ -190,24 +189,30 @@ export async function playDemoUntilDone(
 ): Promise<"won" | "stalemate" | "timeout"> {
   await watchDemoButton(page).click();
 
+  // A demo-mode win shows "Demo Complete!"; a human win shows "You Win!".
+  const win = page.getByRole("heading", { name: /You Win!|Demo Complete!/ });
+  const stalemate = page.getByRole("heading", { name: "Stalemate" });
+  const outcome = async (): Promise<"won" | "stalemate" | null> => {
+    if (await win.isVisible().catch(() => false)) return "won";
+    if (await stalemate.isVisible().catch(() => false)) return "stalemate";
+    return null;
+  };
+
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const winVisible = await page.getByText("You Win!").isVisible().catch(() => false);
-    if (winVisible) {
-      await stopDemoButton(page).click().catch(() => {});
-      return "won";
-    }
-    const stalemateVisible = await page
-      .getByText("Stalemate")
-      .isVisible()
-      .catch(() => false);
-    if (stalemateVisible) return "stalemate";
+    const result = await outcome();
+    if (result) return result;
 
-    const stopVisible = await stopDemoButton(page).isVisible().catch(() => false);
-    if (!stopVisible) {
-      await page.waitForTimeout(500);
-      const stillNoDemo = !(await stopDemoButton(page).isVisible().catch(() => false));
-      if (stillNoDemo) return "timeout";
+    if (!(await stopDemoButton(page).isVisible().catch(() => false))) {
+      // The demo stopped. A win plays the card cascade before its overlay
+      // appears, so give the end screen time to show up before giving up.
+      const deadline = Date.now() + 20_000;
+      while (Date.now() < deadline) {
+        const late = await outcome();
+        if (late) return late;
+        await page.waitForTimeout(250);
+      }
+      return "timeout";
     }
     await page.waitForTimeout(200);
   }
@@ -251,7 +256,7 @@ export async function expectInitialState(page: Page): Promise<void> {
   await expect(statusText(page)).toContainText("Stock: 24");
   await expect(statusText(page)).toContainText("Waste: 0");
   // 7 tableau piles (each with dashed border)
-  const tableauContainer = page.locator(".flex.justify-center.gap-2").last();
+  const tableauContainer = page.getByTestId("tableau-row");
   await expect(tableauContainer).toBeVisible();
   const pileCount = await tableauContainer.locator("> div").count();
   expect(pileCount).toBe(7);
@@ -268,6 +273,8 @@ export async function expectGameInProgress(page: Page): Promise<void> {
 }
 
 export async function newGame(page: Page): Promise<void> {
-  await newGameButton(page).click();
+  // The stalemate overlay has its own "New Game" button covering the header's;
+  // it renders later in the DOM, so .last() is whichever one is clickable.
+  await newGameButton(page).last().click();
   await page.waitForTimeout(200);
 }

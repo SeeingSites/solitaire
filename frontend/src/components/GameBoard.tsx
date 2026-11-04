@@ -230,7 +230,10 @@ export default function GameBoard() {
         </div>
 
         {/* Top row: Stock, Waste, Foundations */}
-        <div className="flex justify-center items-center gap-[var(--card-gap-top)]">
+        <div
+          data-testid="top-row"
+          className="flex justify-center items-center gap-[var(--card-gap-top)]"
+        >
           <StockPile count={state.stock.length} onClick={handleStockClick} />
           <WastePile
             cards={state.waste}
@@ -256,7 +259,10 @@ export default function GameBoard() {
         </div>
 
         {/* Tableau */}
-        <div className="flex justify-center gap-[var(--card-gap-tableau)]">
+        <div
+          data-testid="tableau-row"
+          className="flex justify-center gap-[var(--card-gap-tableau)]"
+        >
           {state.tableau.map((pile, pileIndex) => (
             <TableauPile
               key={`tableau-${pileIndex}`}

@@ -55,22 +55,46 @@ export class KlondikeEngine implements SolitaireEngine {
   }
 
   drawFromStock(): boolean {
-    if (this.stock.length === 0) {
-      // Reshuffle waste into stock
+    const move = this.applyDraw();
+    if (!move) return false;
+    this.history.push(move);
+    this.future = [];
+    this.moveCount++;
+    return true;
+  }
+
+  /** Draw one card (recycling the waste first if the stock is empty). */
+  private applyDraw(): MoveRecord | null {
+    if (this.stock.length === 0 && this.waste.length === 0) return null;
+
+    const reshuffled = this.stock.length === 0;
+    if (reshuffled) {
       this.stock = this.waste.reverse().map((card) => ({ ...card, faceUp: false }));
       this.waste = [];
       this.log("Reshuffled waste into stock");
     }
 
-    const card = this.stock.pop();
-    if (!card) return false;
-
+    const card = this.stock.pop()!;
     card.faceUp = true;
     this.waste.push(card);
-    this.future = [];
-    this.moveCount++;
     this.log(`Drew ${card.rank}${card.suit[0].toUpperCase()}`);
-    return true;
+    return {
+      card: { ...card },
+      from: { type: "stock" },
+      to: { type: "waste" },
+      cardCount: 1,
+      ...(reshuffled && { reshuffled: true }),
+    };
+  }
+
+  private undoDraw(move: MoveRecord): void {
+    const card = this.waste.pop()!;
+    card.faceUp = false;
+    this.stock.push(card);
+    if (move.reshuffled) {
+      this.waste = this.stock.reverse().map((c) => ({ ...c, faceUp: true }));
+      this.stock = [];
+    }
   }
 
   moveCard(from: CardLocation, to: CardLocation): boolean {
@@ -272,6 +296,14 @@ export class KlondikeEngine implements SolitaireEngine {
 
     const move = this.history.pop()!;
 
+    if (move.from.type === "stock") {
+      this.undoDraw(move);
+      this.future.push(move);
+      this.moveCount--;
+      this.log(`Undid draw`);
+      return true;
+    }
+
     // Get the cards from the destination before removing them (for multi-card support)
     const movedCards = this.getLastNCardsFromLocation(move.to, move.cardCount);
 
@@ -305,8 +337,6 @@ export class KlondikeEngine implements SolitaireEngine {
       this.foundations[move.from.index].push(...movedCards);
     } else if (move.from.type === "waste") {
       this.waste.push(...movedCards);
-    } else if (move.from.type === "stock") {
-      this.stock.push(...movedCards);
     }
 
     // Unflip card if one was flipped
@@ -328,6 +358,15 @@ export class KlondikeEngine implements SolitaireEngine {
     if (this.future.length === 0) return false;
 
     const move = this.future.pop()!;
+
+    if (move.from.type === "stock") {
+      const redone = this.applyDraw();
+      if (!redone) return false;
+      this.history.push(redone);
+      this.moveCount++;
+      this.log(`Redid draw`);
+      return true;
+    }
 
     // Get cards from source
     const cards = this.getCardsAtLocation(move.from);

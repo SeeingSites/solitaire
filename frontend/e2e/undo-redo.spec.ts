@@ -81,12 +81,8 @@ test.describe("Undo / Redo", () => {
     expect(await getMoveCount(page)).toBe(prevMoves);
   });
 
-  test("undo with empty history does nothing", async ({ page }) => {
-    const totalCards = await getTotalVisibleCards(page);
-    await undoButton(page).click();
-    await page.waitForTimeout(200);
-
-    expect(await getTotalVisibleCards(page)).toBe(totalCards);
+  test("undo is disabled with empty history", async ({ page }) => {
+    await expect(undoButton(page)).toBeDisabled();
     expect(await getMoveCount(page)).toBe(0);
   });
 

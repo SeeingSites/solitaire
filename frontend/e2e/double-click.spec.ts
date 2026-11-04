@@ -87,7 +87,7 @@ test.describe("Double-Click Auto-Move", () => {
     await drawFromStock(page, 5);
     await page.waitForTimeout(100);
 
-    const stockCount = await page.locator(".bg-blue-700.text-white.text-xs").textContent();
+    const stockCount = await page.getByTestId("stock-count").textContent();
     const wasteBefore = await getWasteCount(page);
 
     const card = wasteCard(page);
@@ -97,7 +97,7 @@ test.describe("Double-Click Auto-Move", () => {
 
       const wasteAfter = await getWasteCount(page);
       if (wasteAfter < wasteBefore) {
-        const stockAfter = await page.locator(".bg-blue-700.text-white.text-xs").textContent();
+        const stockAfter = await page.getByTestId("stock-count").textContent();
         expect(stockAfter).toBe(stockCount);
       }
     }
