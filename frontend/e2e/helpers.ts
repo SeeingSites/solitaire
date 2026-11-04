@@ -191,7 +191,11 @@ export async function playDemoUntilDone(
 
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const winVisible = await page.getByText("You Win!").isVisible().catch(() => false);
+    // A demo-mode win shows "Demo Complete!"; a human win shows "You Win!".
+    const winVisible = await page
+      .getByRole("heading", { name: /You Win!|Demo Complete!/ })
+      .isVisible()
+      .catch(() => false);
     if (winVisible) {
       await stopDemoButton(page).click().catch(() => {});
       return "won";
