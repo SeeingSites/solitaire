@@ -5,6 +5,9 @@ export const ENABLE_PLAY_LOGGING = true;
 
 const STORAGE_KEY = "solitaire-play-logs";
 
+/** Keep only the newest entries; each is ~1 KB and localStorage holds ~5 MB. */
+export const MAX_LOG_ENTRIES = 1000;
+
 export type LoggedMove = {
   timestamp: number;
   gameStateHash: string;
@@ -38,7 +41,8 @@ export function getCurrentSessionId(): string | null {
 }
 
 async function postToServer(entry: LoggedMove): Promise<void> {
-  if (!currentSessionId) return;
+  // /api/logs only exists on the Vite dev server (see vite.config.js).
+  if (!import.meta.env.DEV || !currentSessionId) return;
   try {
     await fetch(`/api/logs/${currentSessionId}`, {
       method: "POST",
@@ -57,6 +61,20 @@ export function logMove(
 ): void {
   if (!ENABLE_PLAY_LOGGING) return;
 
+  // Logging must never break gameplay: it runs mid-move, after the engine
+  // has changed but before the UI state is published.
+  try {
+    recordMove(state, legalMoves, chosenMove);
+  } catch {
+    // Ignore: a lost log entry is harmless.
+  }
+}
+
+function recordMove(
+  state: SolitaireState,
+  legalMoves: Array<{ from: CardLocation; to: CardLocation }>,
+  chosenMove: { from: CardLocation; to: CardLocation },
+): void {
   if (!currentSessionId) newSession();
 
   const entry: LoggedMove = {
@@ -72,16 +90,31 @@ export function logMove(
 
   const logs = getLogs();
   logs.push(entry);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+  saveLogs(logs.slice(-MAX_LOG_ENTRIES));
 
-  postToServer(entry);
+  void postToServer(entry);
+}
+
+function saveLogs(logs: LoggedMove[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+  } catch {
+    // Quota exceeded (other data on the origin) or storage disabled: keep
+    // the newest half and try once more, then give up quietly.
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs.slice(-Math.floor(logs.length / 2))));
+    } catch {
+      // Storage unavailable.
+    }
+  }
 }
 
 export function getLogs(): LoggedMove[] {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
   try {
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
@@ -99,7 +132,11 @@ export function exportLogs(): void {
 }
 
 export function clearLogs(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage unavailable.
+  }
   currentSessionId = null;
 }
 
