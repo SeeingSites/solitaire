@@ -102,10 +102,10 @@ export async function getWasteCount(page: Page): Promise<number> {
 }
 
 export async function getFoundationCardCount(page: Page): Promise<number> {
+  // Foundations render only their top card, so read the real pile size.
   let count = 0;
   for (let i = 0; i < 4; i++) {
-    const cards = foundationPile(page, i).locator('[aria-roledescription="draggable"], .card-back');
-    count += await cards.count();
+    count += Number(await page.getByTestId(`foundation-${i}`).getAttribute("data-count"));
   }
   return count;
 }
