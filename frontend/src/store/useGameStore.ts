@@ -325,8 +325,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       const { engine } = get();
       const preState = engine.getState();
       const legalMoves = engine.findLegalMoves();
-      engine.moveCard(from, to);
-      logMove(preState, legalMoves, { from, to });
+      if (engine.moveCard(from, to)) logMove(preState, legalMoves, { from, to });
       set({ state: engine.getState(), selectedCard: null });
     },
 
