@@ -71,6 +71,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
+    // AI tests play whole games; SIM=1 runs hundreds of them.
+    testTimeout: process.env.SIM === "1" ? 600_000 : 60_000,
     exclude: ["e2e/**", "node_modules/**"],
     coverage: {
       provider: "v8",
@@ -87,10 +89,13 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom"],
-          motion: ["framer-motion"],
-          state: ["zustand"],
+        // Vite 8 (Rolldown) only accepts the function form.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor";
+          if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return "motion";
+          if (/[\\/]node_modules[\\/]zustand[\\/]/.test(id)) return "state";
+          return undefined;
         },
       },
     },
