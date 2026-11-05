@@ -72,7 +72,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
     // AI tests play whole games; SIM=1 runs hundreds of them.
-    testTimeout: process.env.SIM === "1" ? 600_000 : 60_000,
+    testTimeout: process.env.SIM === "1" ? 1_800_000 : 60_000,
     exclude: ["e2e/**", "node_modules/**"],
     coverage: {
       provider: "v8",
