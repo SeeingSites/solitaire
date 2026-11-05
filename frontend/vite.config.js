@@ -5,7 +5,7 @@ import fs from 'fs'
 import path from 'path'
 
 function playLogPlugin() {
-  const logsDir = path.resolve(__dirname, '..', 'logs')
+  const logsDir = path.resolve(import.meta.dirname, '..', 'logs')
 
   return {
     name: 'play-log',
@@ -93,7 +93,6 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor";
-          if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return "motion";
           if (/[\\/]node_modules[\\/]zustand[\\/]/.test(id)) return "state";
           return undefined;
         },

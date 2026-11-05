@@ -66,27 +66,23 @@ function isReverseMove(
   );
 }
 
-function moveFingerprint(move: { from: CardLocation; to: CardLocation }): string {
-  const from =
-    move.from.type === "tableau"
-      ? `t${(move.from as { type: "tableau"; pileIndex: number }).pileIndex}`
-      : move.from.type;
-  const to =
-    move.to.type === "tableau"
-      ? `t${(move.to as { type: "tableau"; pileIndex: number }).pileIndex}`
-      : move.to.type;
-  return `${from}→${to}`;
+/** Same endpoints as moveFingerprint compares (type, plus pile for tableau). */
+function sameEndpoint(a: CardLocation, b: CardLocation): boolean {
+  if (a.type !== b.type) return false;
+  return a.type !== "tableau" || a.pileIndex === (b as { pileIndex: number }).pileIndex;
 }
 
 function isRepeatMovePattern(
   move: { from: CardLocation; to: CardLocation },
   recentMoves: Array<{ from: CardLocation; to: CardLocation }>,
 ): boolean {
-  const fp = moveFingerprint(move);
+  // Hot path (runs for every candidate in every rollout step): compare
+  // structurally instead of building fingerprint strings.
   let count = 0;
   const checkLen = Math.min(recentMoves.length, MOVE_REPEAT_WINDOW);
   for (let i = recentMoves.length - 1; i >= recentMoves.length - checkLen && i >= 0; i--) {
-    if (moveFingerprint(recentMoves[i]) === fp) count++;
+    const r = recentMoves[i];
+    if (sameEndpoint(r.from, move.from) && sameEndpoint(r.to, move.to)) count++;
     if (count >= 2) return true;
   }
   return false;
@@ -220,21 +216,27 @@ function evaluateState(state: SolitaireState, prevState?: SolitaireState): numbe
   return score;
 }
 
+// Hot path: called for every simulated move in every rollout step. One pass
+// over the tableau computes the same terms the separate helpers would.
 function quickEvaluate(state: SolitaireState): number {
   let score = 0;
   for (const pile of state.foundations) {
     score += pile.length * 100;
   }
-  const faceDown = countFaceDown(state.tableau);
-  score -= faceDown * 8;
-  score -= countBuriedFaceUp(state.tableau) * 5;
   score -= state.waste.length * 2;
   for (const pile of state.tableau) {
-    if (pile.length === 0) score += 30;
-  }
-  for (const pile of state.tableau) {
+    if (pile.length === 0) {
+      score += 30;
+      continue;
+    }
+    let seenFaceDown = false;
     for (const card of pile) {
-      if (!card.faceUp) continue;
+      if (!card.faceUp) {
+        seenFaceDown = true;
+        score -= 8; // face-down card
+        continue;
+      }
+      if (seenFaceDown) score -= 5; // face-up card buried under a face-down one
       const foundationIdx = FOUNDATION_SUITS.indexOf(card.suit);
       if (foundationIdx < 0) continue;
       const foundation = state.foundations[foundationIdx];
@@ -242,9 +244,7 @@ function quickEvaluate(state: SolitaireState): number {
       if (card.rank === nextRank) {
         score += 25;
       } else if (foundation.length > 0) {
-        const cardVal = RANK_VALUES[card.rank];
-        const nextVal = RANK_VALUES[nextRank];
-        if (cardVal === nextVal - 1) {
+        if (RANK_VALUES[card.rank] === RANK_VALUES[nextRank] - 1) {
           score += 8;
         }
       }

@@ -47,7 +47,12 @@ jobs:
   e2e:
     # Pinned: Playwright cannot install Chromium deps on ubuntu-latest (26.04).
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 30
+    # The demo-driven specs play whole games; split the suite across runners.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
 
@@ -62,13 +67,13 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: E2E tests
-        run: npx playwright test
+      - name: E2E tests (shard ${{ matrix.shard }}/4)
+        run: npx playwright test --shard=${{ matrix.shard }}/4
 
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: |
             frontend/test-results
             frontend/playwright-report
