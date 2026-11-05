@@ -35,16 +35,18 @@ export default function GameBoard() {
     setDemoSpeed,
   } = useGameStore();
 
-  const [cascadePhase, setCascadePhase] = useState<"idle" | "cascading" | "done">("idle");
   const [logsExist, setLogsExist] = useState(hasLogs);
 
-  useEffect(() => {
-    if (state.isComplete && cascadePhase === "idle") {
-      setCascadePhase("cascading");
-    } else if (!state.isComplete && cascadePhase !== "idle") {
-      setCascadePhase("idle");
-    }
-  }, [state.isComplete, cascadePhase]);
+  // The win cascade plays whenever the game becomes complete; finishing it
+  // shows the win overlay. Derived from state.isComplete rather than synced
+  // in an effect; a change in completion resets it (e.g. undo, new game).
+  const [cascadeDone, setCascadeDone] = useState(false);
+  const [wasComplete, setWasComplete] = useState(state.isComplete);
+  if (state.isComplete !== wasComplete) {
+    setWasComplete(state.isComplete);
+    setCascadeDone(false);
+  }
+  const cascadePhase = !state.isComplete ? "idle" : cascadeDone ? "done" : "cascading";
 
   useEffect(() => {
     const interval = setInterval(() => setLogsExist(hasLogs()), 2000);
@@ -52,7 +54,7 @@ export default function GameBoard() {
   }, []);
 
   const handleCascadeComplete = useCallback(() => {
-    setCascadePhase("done");
+    setCascadeDone(true);
   }, []);
 
   const handleStockClick = () => {
@@ -135,7 +137,6 @@ export default function GameBoard() {
 
   const handleNewGame = () => {
     if (isDemoMode) stopDemo();
-    setCascadePhase("idle");
     useGameStore.getState().startGame();
   };
 

@@ -9,5 +9,15 @@ updates:
     schedule:
       interval: "monthly"
     groups:
+      # react, react-dom and their types must move together or npm ci fails.
+      react:
+        patterns: ["react", "react-dom", "@types/react", "@types/react-dom"]
+      # @vitejs/plugin-react majors track Vite majors.
+      vite:
+        patterns: ["vite", "@vitejs/plugin-react", "vitest", "@vitest/*"]
       minor-and-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # eslint-plugin-react does not support ESLint 10 yet (peer eslint <=9).
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]

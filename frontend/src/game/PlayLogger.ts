@@ -140,6 +140,12 @@ export function clearLogs(): void {
   currentSessionId = null;
 }
 
+/** Cheap check (no parse): GameBoard polls this every 2s. */
 export function hasLogs(): boolean {
-  return getLogs().length > 0;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw !== null && raw !== "[]";
+  } catch {
+    return false;
+  }
 }
