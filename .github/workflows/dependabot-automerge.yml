@@ -1,0 +1,57 @@
+name: Dependabot auto-merge
+
+# Repository auto-merge isn't available here, so this merges Dependabot's
+# minor/patch updates directly once the CI workflow has passed on them.
+# workflow_run runs with this repo's permissions (pull_request runs for
+# Dependabot only get a read-only token).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Merge if it is a passing minor/patch Dependabot PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PR_NUMBER" ]; then echo "No pull request for this run."; exit 0; fi
+
+          pr=$(gh api "repos/$REPO/pulls/$PR_NUMBER")
+          author=$(jq -r '.user.login' <<<"$pr")
+          state=$(jq -r '.state' <<<"$pr")
+          head=$(jq -r '.head.sha' <<<"$pr")
+          if [ "$author" != "dependabot[bot]" ] || [ "$state" != "open" ]; then
+            echo "PR #$PR_NUMBER is not an open Dependabot PR; skipping."; exit 0
+          fi
+          if [ "$head" != "$HEAD_SHA" ]; then
+            echo "PR #$PR_NUMBER moved past the commit CI tested; skipping."; exit 0
+          fi
+
+          # Dependabot records each update's semver level in the commit message.
+          msg=$(gh api "repos/$REPO/commits/$HEAD_SHA" --jq '.commit.message')
+          if ! grep -q 'update-type: version-update:semver-' <<<"$msg"; then
+            echo "No Dependabot update metadata; skipping."; exit 0
+          fi
+          if grep -q 'update-type: version-update:semver-major' <<<"$msg"; then
+            echo "Contains a major update; leaving PR #$PR_NUMBER for review."; exit 0
+          fi
+
+          # Pin the tested commit so a newer push can't be merged untested.
+          gh api -X PUT "repos/$REPO/pulls/$PR_NUMBER/merge" \
+            -f merge_method=squash -f sha="$HEAD_SHA" --jq '.message'
