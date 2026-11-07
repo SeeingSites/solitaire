@@ -1,5 +1,5 @@
 frontend/dist/
-frontend/node_modules/
+node_modules/
 frontend/.ms-playwright/
 frontend/playwright-report/
 frontend/test-results/

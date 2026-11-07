@@ -29,6 +29,7 @@ export default function GameBoard() {
     selectCard,
     isDemoMode,
     isStalemate,
+    wonByDemo,
     demoSpeed,
     startDemo,
     stopDemo,
@@ -284,7 +285,7 @@ export default function GameBoard() {
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
             <div className="bg-gradient-to-br from-amber-600 to-amber-700 p-8 rounded-2xl text-center shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">
-                {isDemoMode ? "Demo Complete!" : "You Win!"}
+                {isDemoMode || wonByDemo ? "Demo Complete!" : "You Win!"}
               </h2>
               <p className="text-amber-100 mb-6">Completed in {state.moveCount} moves</p>
               <button

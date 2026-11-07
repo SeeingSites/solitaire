@@ -20,9 +20,8 @@ test.describe("Win / Stalemate Detection", () => {
     const result = await playDemoUntilDone(page, 120_000);
 
     if (result === "won") {
-      // The demo loop turns demo mode off when the engine reports a win, so the
-      // overlay usually says "You Win!" by the time the cascade finishes.
-      await expect(page.getByRole("heading", { name: /You Win!|Demo Complete!/ })).toBeVisible();
+      // Demo mode ends at the win, but the store remembers the demo won it.
+      await expect(page.getByRole("heading", { name: "Demo Complete!" })).toBeVisible();
     }
     expect(true).toBe(true);
   });

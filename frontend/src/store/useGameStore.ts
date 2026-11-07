@@ -13,6 +13,8 @@ interface GameStore {
   // Demo mode
   isDemoMode: boolean;
   isStalemate: boolean;
+  /** The current game was won by the demo AI (demo mode ends at the win). */
+  wonByDemo: boolean;
   demoSpeed: number;
 
   // Stalemate tracking
@@ -127,7 +129,7 @@ function runDemoLoop(
   if (!isDemoMode || generation !== demoGeneration) return;
 
   if (engine.isWon()) {
-    set({ isDemoMode: false });
+    set({ isDemoMode: false, wonByDemo: true });
     return;
   }
 
@@ -286,6 +288,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     selectedCard: null,
     isDemoMode: false,
     isStalemate: false,
+    wonByDemo: false,
     demoSpeed: 500,
     recentMoves: [],
     recentStates: [],
@@ -305,6 +308,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         selectedCard: null,
         isDemoMode: false,
         isStalemate: false,
+        wonByDemo: false,
         recentMoves: [],
         recentStates: [],
         movesSinceFoundation: 0,
@@ -338,7 +342,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     undo: () => {
       const { engine } = get();
       engine.undo();
-      set({ state: engine.getState(), selectedCard: null });
+      set({ state: engine.getState(), selectedCard: null, wonByDemo: false });
     },
 
     redo: () => {
@@ -356,6 +360,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         selectedCard: null,
         isDemoMode: false,
         isStalemate: false,
+        wonByDemo: false,
         recentMoves: [],
         recentStates: [],
         movesSinceFoundation: 0,
@@ -377,6 +382,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       set({
         isDemoMode: true,
         isStalemate: false,
+        wonByDemo: false,
         recentMoves: [],
         recentStates: [hashState(state)],
         movesSinceFoundation: 0,

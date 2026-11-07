@@ -36,6 +36,8 @@ function playGame(maxMoves = 2000): {
   bailedOut: boolean;
   maxFoundationCount: number;
   stockDraws: number;
+  /** Draws made because no other move was legal (included in stockDraws). */
+  forcedStockDraws: number;
   foundationMoves: number;
   tableauMoves: number;
   multiCardMoves: number;
@@ -58,6 +60,7 @@ function playGame(maxMoves = 2000): {
   let bailedOut = false;
   let maxFoundationCount = 0;
   let stockDraws = 0;
+  let forcedStockDraws = 0;
   let foundationMoves = 0;
   let tableauMoves = 0;
   let multiCardMoves = 0;
@@ -83,6 +86,7 @@ function playGame(maxMoves = 2000): {
         bailedOut: false,
         maxFoundationCount: 52,
         stockDraws,
+        forcedStockDraws,
         foundationMoves,
         tableauMoves,
         multiCardMoves,
@@ -112,6 +116,7 @@ function playGame(maxMoves = 2000): {
       if (state.stock.length > 0 || state.waste.length > 0) {
         engine.drawFromStock();
         stockDraws++;
+        forcedStockDraws++;
         // Forced draw: nothing else is legal, so it doesn't count toward the
         // AI's consecutive-draw streak (a dead deal can cycle the stock ~200x).
         context.consecutiveStockDraws++;
@@ -272,6 +277,7 @@ function playGame(maxMoves = 2000): {
     bailedOut,
     maxFoundationCount,
     stockDraws,
+    forcedStockDraws,
     foundationMoves,
     tableauMoves,
     multiCardMoves,
@@ -727,7 +733,11 @@ describe("AI Stock-Draw Ratio", () => {
     }
 
     const filtered = results.filter((r) => r.moves > 200);
-    const ratios = filtered.map((r) => (r.moves > 0 ? r.stockDraws / r.moves : 0));
+    // Only draws the AI chose: a dead deal has no other legal move and can
+    // cycle the stock for most of the game.
+    const ratios = filtered.map((r) =>
+      r.moves > 0 ? (r.stockDraws - r.forcedStockDraws) / r.moves : 0,
+    );
     const avgRatio = ratios.length > 0 ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 0;
     const maxRatio = ratios.length > 0 ? Math.max(...ratios) : 0;
 
