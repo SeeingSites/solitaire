@@ -13,9 +13,19 @@ export class KlondikeEngine implements SolitaireEngine {
   private future: MoveRecord[] = [];
   private moveCount = 0;
   private lastActionLog: string[] = [];
+  private drawCount: 1 | 3 = 1;
 
-  constructor() {
+  constructor(drawCount: 1 | 3 = 1) {
+    this.drawCount = drawCount;
     this.initGame();
+  }
+
+  setDrawCount(count: 1 | 3): void {
+    this.drawCount = count;
+  }
+
+  getDrawCount(): 1 | 3 {
+    return this.drawCount;
   }
 
   initGame(): void {
@@ -63,7 +73,7 @@ export class KlondikeEngine implements SolitaireEngine {
     return true;
   }
 
-  /** Draw one card (recycling the waste first if the stock is empty). */
+  /** Draw up to drawCount cards (recycling the waste first if the stock is empty). */
   private applyDraw(): MoveRecord | null {
     if (this.stock.length === 0 && this.waste.length === 0) return null;
 
@@ -74,23 +84,40 @@ export class KlondikeEngine implements SolitaireEngine {
       this.log("Reshuffled waste into stock");
     }
 
-    const card = this.stock.pop()!;
-    card.faceUp = true;
-    this.waste.push(card);
-    this.log(`Drew ${card.rank}${card.suit[0].toUpperCase()}`);
+    const drawn: Card[] = [];
+    const toDraw = Math.min(this.drawCount, this.stock.length);
+    for (let i = 0; i < toDraw; i++) {
+      const card = this.stock.pop()!;
+      card.faceUp = true;
+      this.waste.push(card);
+      drawn.push({ ...card });
+    }
+
+    if (drawn.length === 0) return null;
+
+    this.log(`Drew ${drawn.length} card${drawn.length > 1 ? "s" : ""}`);
     return {
-      card: { ...card },
+      card: drawn[drawn.length - 1],
       from: { type: "stock" },
       to: { type: "waste" },
-      cardCount: 1,
+      cardCount: drawn.length,
       ...(reshuffled && { reshuffled: true }),
     };
   }
 
   private undoDraw(move: MoveRecord): void {
-    const card = this.waste.pop()!;
-    card.faceUp = false;
-    this.stock.push(card);
+    const count = move.cardCount || 1;
+    const returned: Card[] = [];
+    for (let i = 0; i < count; i++) {
+      if (this.waste.length === 0) break;
+      const card = this.waste.pop()!;
+      card.faceUp = false;
+      returned.push(card);
+    }
+    // Restore in reverse order so stock order is preserved
+    for (let i = returned.length - 1; i >= 0; i--) {
+      this.stock.push(returned[i]);
+    }
     if (move.reshuffled) {
       this.waste = this.stock.reverse().map((c) => ({ ...c, faceUp: true }));
       this.stock = [];
@@ -105,7 +132,6 @@ export class KlondikeEngine implements SolitaireEngine {
 
     if (!this.isValidMove(card, to)) return false;
 
-    // Record move for undo
     const move: MoveRecord = {
       card: { ...card },
       from: { ...from },
@@ -113,13 +139,9 @@ export class KlondikeEngine implements SolitaireEngine {
       cardCount: cards.length,
     };
 
-    // Remove cards from source
     this.removeCardsFromLocation(from, cards.length);
-
-    // Add cards to destination
     this.addCardsToLocation(to, cards);
 
-    // Flip top card of tableau if needed
     if (from.type === "tableau") {
       const sourcePile = this.tableau[from.pileIndex];
       if (sourcePile.length > 0) {
@@ -143,7 +165,6 @@ export class KlondikeEngine implements SolitaireEngine {
     while (moved) {
       moved = false;
 
-      // Check waste pile
       if (this.waste.length > 0) {
         const card = this.waste[this.waste.length - 1];
         for (let i = 0; i < 4; i++) {
@@ -155,7 +176,6 @@ export class KlondikeEngine implements SolitaireEngine {
         }
       }
 
-      // Check tableau piles
       for (let i = 0; i < 7; i++) {
         const pile = this.tableau[i];
         if (pile.length > 0) {
@@ -177,7 +197,6 @@ export class KlondikeEngine implements SolitaireEngine {
   }
 
   canAutoComplete(): boolean {
-    // Check if any card can be moved to foundation
     if (this.waste.length > 0) {
       const card = this.waste[this.waste.length - 1];
       for (let i = 0; i < 4; i++) {
@@ -208,19 +227,16 @@ export class KlondikeEngine implements SolitaireEngine {
   findLegalMoves(): Array<{ from: CardLocation; to: CardLocation }> {
     const moves: Array<{ from: CardLocation; to: CardLocation }> = [];
 
-    // Check waste → foundation and waste → tableau
     if (this.waste.length > 0) {
       const wasteCard = this.waste[this.waste.length - 1];
       const from: CardLocation = { type: "waste" };
 
-      // Waste → foundation
       for (let i = 0; i < 4; i++) {
         if (this.isValidMove(wasteCard, { type: "foundation", index: i })) {
           moves.push({ from, to: { type: "foundation", index: i } });
         }
       }
 
-      // Waste → tableau
       for (let i = 0; i < 7; i++) {
         if (this.isValidMove(wasteCard, { type: "tableau", pileIndex: i, cardIndex: 0 })) {
           moves.push({ from, to: { type: "tableau", pileIndex: i, cardIndex: 0 } });
@@ -228,10 +244,8 @@ export class KlondikeEngine implements SolitaireEngine {
       }
     }
 
-    // Check each tableau pile
     for (let i = 0; i < 7; i++) {
       const pile = this.tableau[i];
-      // Find the first face-up card in this pile
       let firstFaceUp = -1;
       for (let j = 0; j < pile.length; j++) {
         if (pile[j].faceUp) {
@@ -242,7 +256,6 @@ export class KlondikeEngine implements SolitaireEngine {
 
       if (firstFaceUp === -1) continue;
 
-      // Tableau pile → foundation (only top card can go to foundation)
       const topCard = pile[pile.length - 1];
       for (let f = 0; f < 4; f++) {
         if (this.isValidMove(topCard, { type: "foundation", index: f })) {
@@ -253,15 +266,11 @@ export class KlondikeEngine implements SolitaireEngine {
         }
       }
 
-      // Tableau pile → other tableau piles (support multi-card subsequences)
-      // For each face-up card position, check if cards from there to end form a valid descending sequence
       for (let cardIdx = firstFaceUp; cardIdx < pile.length; cardIdx++) {
         const movingCard = pile[cardIdx];
 
-        // Check if cards from cardIdx to end form a valid alternating-color descending sequence
         if (!this.isValidSubsequence(pile, cardIdx)) continue;
 
-        // Try moving this subsequence to each other tableau pile
         for (let j = 0; j < 7; j++) {
           if (i === j) continue;
           if (this.isValidMove(movingCard, { type: "tableau", pileIndex: j, cardIndex: 0 })) {
@@ -277,7 +286,6 @@ export class KlondikeEngine implements SolitaireEngine {
     return moves;
   }
 
-  // Check if cards from startIdx to end of pile form a valid descending alternating-color sequence
   private isValidSubsequence(pile: Card[], startIdx: number): boolean {
     for (let k = startIdx + 1; k < pile.length; k++) {
       if (!canStackOnTableau(pile[k], pile[k - 1])) {
@@ -304,10 +312,8 @@ export class KlondikeEngine implements SolitaireEngine {
       return true;
     }
 
-    // Get the cards from the destination before removing them (for multi-card support)
     const movedCards = this.getLastNCardsFromLocation(move.to, move.cardCount);
 
-    // Remove cards from destination (always from the end, since cards are pushed to the end)
     switch (move.to.type) {
       case "stock":
         this.stock.splice(this.stock.length - move.cardCount, move.cardCount);
@@ -329,9 +335,7 @@ export class KlondikeEngine implements SolitaireEngine {
         break;
     }
 
-    // Add cards back to source in correct order
     if (move.from.type === "tableau") {
-      // For tableau, insert all cards at the original position
       this.tableau[move.from.pileIndex].splice(move.from.cardIndex, 0, ...movedCards);
     } else if (move.from.type === "foundation") {
       this.foundations[move.from.index].push(...movedCards);
@@ -339,7 +343,6 @@ export class KlondikeEngine implements SolitaireEngine {
       this.waste.push(...movedCards);
     }
 
-    // Unflip card if one was flipped
     if (move.flippedCard && move.from.type === "tableau") {
       const sourcePile = this.tableau[move.from.pileIndex];
       const flipIndex = move.from.cardIndex - 1;
@@ -368,17 +371,12 @@ export class KlondikeEngine implements SolitaireEngine {
       return true;
     }
 
-    // Get cards from source
     const cards = this.getCardsAtLocation(move.from);
     if (!cards || cards.length === 0) return false;
 
-    // Remove from source (handle multi-card moves)
     this.removeCardsFromLocation(move.from, move.cardCount);
-
-    // Add to destination
     this.addCardsToLocation(move.to, cards);
 
-    // Flip card if needed
     if (move.from.type === "tableau") {
       const sourcePile = this.tableau[move.from.pileIndex];
       if (sourcePile.length > 0) {
