@@ -14,6 +14,7 @@ interface GameStore {
   selectedCard: CardLocation | null;
   drawCount: DrawCount;
   scoringMode: ScoringMode;
+  vegasRules: boolean;
   hint: { from: CardLocation; to: CardLocation } | null;
 
   // Demo mode
@@ -43,6 +44,7 @@ interface GameStore {
   reset: () => void;
   setDrawCount: (count: DrawCount) => void;
   setScoringMode: (mode: ScoringMode) => void;
+  setVegasRules: (enabled: boolean) => void;
   requestHint: () => void;
   clearHint: () => void;
 
@@ -107,6 +109,22 @@ const loadScoringMode = (): ScoringMode => {
 const saveScoringMode = (mode: ScoringMode) => {
   try {
     localStorage.setItem("solitaire-scoring", mode);
+  } catch {
+    /* ignore */
+  }
+};
+
+const loadVegasRules = (): boolean => {
+  try {
+    return localStorage.getItem("solitaire-vegas-rules") === "true";
+  } catch {
+    return false;
+  }
+};
+
+const saveVegasRules = (enabled: boolean) => {
+  try {
+    localStorage.setItem("solitaire-vegas-rules", String(enabled));
   } catch {
     /* ignore */
   }
@@ -318,7 +336,8 @@ function runDemoLoop(
 
 export const useGameStore = create<GameStore>((set, get) => {
   const initialDraw = loadDrawCount();
-  const engine = new KlondikeEngine(initialDraw);
+  const initialVegas = loadVegasRules();
+  const engine = new KlondikeEngine(initialDraw, initialVegas);
   return {
     engine,
     state: engine.getState(),
@@ -326,6 +345,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     selectedCard: null,
     drawCount: initialDraw,
     scoringMode: loadScoringMode(),
+    vegasRules: initialVegas,
     hint: null,
     isDemoMode: false,
     isStalemate: false,
@@ -342,8 +362,8 @@ export const useGameStore = create<GameStore>((set, get) => {
     startGame: () => {
       clearDemoTimer();
       newSession();
-      const { drawCount } = get();
-      const engine = new KlondikeEngine(drawCount);
+      const { drawCount, vegasRules } = get();
+      const engine = new KlondikeEngine(drawCount, vegasRules);
       set({
         engine,
         state: engine.getState(),
@@ -396,8 +416,8 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     reset: () => {
       clearDemoTimer();
-      const { drawCount } = get();
-      const engine = new KlondikeEngine(drawCount);
+      const { drawCount, vegasRules } = get();
+      const engine = new KlondikeEngine(drawCount, vegasRules);
       set({
         engine,
         state: engine.getState(),
@@ -426,6 +446,19 @@ export const useGameStore = create<GameStore>((set, get) => {
     setScoringMode: (mode: ScoringMode) => {
       saveScoringMode(mode);
       set({ scoringMode: mode });
+    },
+
+    setVegasRules: (enabled: boolean) => {
+      saveVegasRules(enabled);
+      const { engine } = get();
+      engine.setVegasRules(enabled);
+      // When enabling Vegas rules, also switch to Vegas scoring
+      if (enabled) {
+        saveScoringMode("vegas");
+        set({ vegasRules: enabled, scoringMode: "vegas" });
+      } else {
+        set({ vegasRules: enabled });
+      }
     },
 
     requestHint: () => {
@@ -457,7 +490,6 @@ export const useGameStore = create<GameStore>((set, get) => {
       );
 
       set({ hint: best });
-      // Auto-clear after 4 seconds
       setTimeout(() => {
         if (get().hint === best) set({ hint: null });
       }, 4000);
