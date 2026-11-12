@@ -3,7 +3,7 @@
 # One command for everything.
 # ================================================
 
-.PHONY: help setup dev build preview test lint format docker-build docker-run clean vercel
+.PHONY: help setup dev build preview test lint format docker-build docker-run clean vercel deploy
 
 # Default target
 help:
@@ -19,9 +19,12 @@ help:
 	@echo "  make docker-build   → Build production Docker image"
 	@echo "  make docker-run     → Run production Docker container (port 8080)"
 	@echo "  make clean          → Remove build artifacts and node_modules"
-	@echo "  make vercel         → Deploy to Vercel (requires Vercel CLI)"
+	@echo "  make vercel         → Deploy to Vercel (requires Vercel CLI + login)"
+	@echo "  make deploy         → Alias for make vercel"
 	@echo ""
 	@echo "All commands automatically cd into ./frontend"
+	@echo ""
+	@echo "One-click deploy: https://vercel.com/new?repository-url=https://github.com/SeeingSites/solitaire"
 
 # Detect if we're in devcontainer (workspace root)
 FRONTEND_DIR := ./frontend
@@ -77,10 +80,14 @@ clean:
 	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/node_modules
 	@echo "🧹 Cleaned build artifacts and node_modules"
 
-# Vercel deployment (requires Vercel CLI installed)
-vercel:
+# Vercel deployment (requires Vercel CLI installed and logged in)
+vercel deploy:
 	@echo "🚀 Deploying to Vercel..."
-	@cd $(FRONTEND_DIR) && npx vercel --prod
+	@echo "If this is your first time, run: npx vercel login"
+	@cd $(FRONTEND_DIR) && npx vercel --prod --yes
+	@echo ""
+	@echo "✅ Deployed! Check your Vercel dashboard for the URL."
+	@echo "One-click alternative: https://vercel.com/new?repository-url=https://github.com/SeeingSites/solitaire"
 
 # Quick alias for common workflow
 all: setup build test
