@@ -1,21 +1,24 @@
 # Solitaire
 
-A classic Klondike Solitaire card game built with React, TypeScript, and Vite — now with AI hints, draw-1/draw-3, Vegas scoring, polished visuals, sound effects, and a live timer.
+A polished Klondike Solitaire game built with React, TypeScript, and Vite.
 
 ## Features
 
 - Classic Klondike Solitaire (draw 1 or draw 3, toggle anytime)
+- **Vegas rules** toggle — no waste recycling + classic Vegas scoring (-52 + 5 per foundation card)
 - Drag-and-drop + click-to-move + double-click to foundation
 - **AI Hint system** — suggests the best move using the built-in solver (highlights source & target)
 - Auto-complete when all cards are face-up
 - Undo / Redo
 - Watch Demo mode powered by a strong AI solver
-- **Scoring**: Standard (foundations + efficiency) or classic **Vegas** (-52 + 5 per foundation card)
+- **Seeded deals** — every game has a seed number so you can replay the exact same layout
 - Dark / light theme
 - Responsive design with improved mobile touch targets
+- Traditional pip layouts on number cards
 - Move counter, live timer, and score
 - Web Audio sound effects with mute toggle
 - Win cascade celebration + stalemate detection
+- **Keyboard shortcuts**: `U` Undo · `R` Redo · `H` Hint · `A` Auto Complete · `N` New Game · `D` Draw
 - Play logging for analysis
 
 ## Tech Stack
@@ -63,7 +66,11 @@ make vercel
 
 Build four foundation piles (Ace → King by suit). Tableau builds down alternating colors. Kings only on empty tableau. Click stock to draw (1 or 3 cards). Double-click or drag to move. Use **Hint** for an AI suggestion, Undo, Auto Complete, or Watch Demo.
 
-Controls: click / drag / double-click · Undo · Redo · Hint · Auto Complete · Watch Demo · Draw 1/3 · Standard/Vegas scoring · Sound toggle · New Game.
+Controls: click / drag / double-click · Undo · Redo · Hint · Auto Complete · Watch Demo · Draw 1/3 · Standard/Vegas rules · Sound toggle · New Game.
+
+Keyboard: `U` Undo, `R` Redo, `H` Hint, `A` Auto Complete, `N` New Game, `D` Draw from stock.
+
+The deal seed is shown in the status bar — share it to let someone else play the exact same layout.
 
 ## License
 
