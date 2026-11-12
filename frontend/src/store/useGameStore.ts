@@ -1,19 +1,24 @@
 import { create } from "zustand";
 import { SolitaireEngine, SolitaireState, CardLocation } from "../game/types";
 import { KlondikeEngine } from "../game/Klondike";
-import { rolloutBestMove, hashState, MoveSimulator } from "../game/AI";
+import { rolloutBestMove, findBestMove, hashState, MoveSimulator } from "../game/AI";
 import { logMove, newSession } from "../game/PlayLogger";
 
+type ScoringMode = "standard" | "vegas";
+type DrawCount = 1 | 3;
+
 interface GameStore {
-  engine: SolitaireEngine;
+  engine: KlondikeEngine;
   state: SolitaireState;
   theme: "dark" | "light";
   selectedCard: CardLocation | null;
+  drawCount: DrawCount;
+  scoringMode: ScoringMode;
+  hint: { from: CardLocation; to: CardLocation } | null;
 
   // Demo mode
   isDemoMode: boolean;
   isStalemate: boolean;
-  /** The current game was won by the demo AI (demo mode ends at the win). */
   wonByDemo: boolean;
   demoSpeed: number;
 
@@ -36,6 +41,10 @@ interface GameStore {
   undo: () => void;
   redo: () => void;
   reset: () => void;
+  setDrawCount: (count: DrawCount) => void;
+  setScoringMode: (mode: ScoringMode) => void;
+  requestHint: () => void;
+  clearHint: () => void;
 
   // Selection
   selectCard: (location: CardLocation | null) => void;
@@ -62,6 +71,42 @@ const loadTheme = (): "dark" | "light" => {
 const saveTheme = (theme: "dark" | "light") => {
   try {
     localStorage.setItem("solitaire-theme", theme);
+  } catch {
+    /* ignore */
+  }
+};
+
+const loadDrawCount = (): DrawCount => {
+  try {
+    const saved = localStorage.getItem("solitaire-draw");
+    if (saved === "3") return 3;
+  } catch {
+    /* ignore */
+  }
+  return 1;
+};
+
+const saveDrawCount = (count: DrawCount) => {
+  try {
+    localStorage.setItem("solitaire-draw", String(count));
+  } catch {
+    /* ignore */
+  }
+};
+
+const loadScoringMode = (): ScoringMode => {
+  try {
+    const saved = localStorage.getItem("solitaire-scoring");
+    if (saved === "vegas") return "vegas";
+  } catch {
+    /* ignore */
+  }
+  return "standard";
+};
+
+const saveScoringMode = (mode: ScoringMode) => {
+  try {
+    localStorage.setItem("solitaire-scoring", mode);
   } catch {
     /* ignore */
   }
@@ -133,7 +178,6 @@ function runDemoLoop(
     return;
   }
 
-  // Hard move cap: bail out if we've made too many moves
   if (demoMoveCount >= MAX_DEMO_MOVES) {
     bailDemo(set);
     return;
@@ -143,10 +187,8 @@ function runDemoLoop(
   const legalMoves = engine.findLegalMoves();
   const prevFoundationCount = state.foundations.reduce((sum, p) => sum + p.length, 0);
 
-  // Stalemate detection: track reshuffles and foundation progress
   const stockWasEmpty = state.stock.length === 0;
 
-  // Force stock draw if stuck in a plateau
   if (movesSinceFoundation > 5 && (state.stock.length > 0 || state.waste.length > 0)) {
     engine.drawFromStock();
     const newState = engine.getState();
@@ -163,7 +205,6 @@ function runDemoLoop(
       movesSinceFoundation: foundationProgressed ? 0 : 3,
       demoMoveCount: demoMoveCount + 1,
     });
-    // Check for reshuffle (stock went from empty to having cards)
     if (stockWasEmpty && newStockLen > 0) {
       const stalemateResult = checkStalemate(get, set, prevFoundationCount);
       if (stalemateResult) return;
@@ -187,7 +228,6 @@ function runDemoLoop(
         movesSinceFoundation: movesSinceFoundation + 1,
         demoMoveCount: demoMoveCount + 1,
       });
-      // Check for reshuffle
       if (stockWasEmpty && newStockLen > 0) {
         const stalemateResult = checkStalemate(get, set, prevFoundationCount);
         if (stalemateResult) return;
@@ -199,7 +239,6 @@ function runDemoLoop(
     return;
   }
 
-  // Create engine-based simulator
   const simulate: MoveSimulator = (move) => {
     const ok = engine.moveCard(move.from, move.to);
     if (!ok) return null;
@@ -245,7 +284,6 @@ function runDemoLoop(
       consecutiveStockDraws: bestMove.from.type === "stock" ? consecutiveStockDraws + 1 : 0,
       demoMoveCount: demoMoveCount + 1,
     });
-    // Bail if too many moves without foundation progress
     if (!foundationProgressed && movesSinceFoundation + 1 >= MAX_MOVES_WITHOUT_FC) {
       bailDemo(set);
       return;
@@ -265,7 +303,6 @@ function runDemoLoop(
         movesSinceFoundation: movesSinceFoundation + 1,
         demoMoveCount: demoMoveCount + 1,
       });
-      // Check for reshuffle
       if (stockWasEmpty && newStockLen > 0) {
         const stalemateResult = checkStalemate(get, set, prevFoundationCount);
         if (stalemateResult) return;
@@ -280,12 +317,16 @@ function runDemoLoop(
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
-  const engine = new KlondikeEngine();
+  const initialDraw = loadDrawCount();
+  const engine = new KlondikeEngine(initialDraw);
   return {
     engine,
     state: engine.getState(),
     theme: loadTheme(),
     selectedCard: null,
+    drawCount: initialDraw,
+    scoringMode: loadScoringMode(),
+    hint: null,
     isDemoMode: false,
     isStalemate: false,
     wonByDemo: false,
@@ -301,11 +342,13 @@ export const useGameStore = create<GameStore>((set, get) => {
     startGame: () => {
       clearDemoTimer();
       newSession();
-      const engine = new KlondikeEngine();
+      const { drawCount } = get();
+      const engine = new KlondikeEngine(drawCount);
       set({
         engine,
         state: engine.getState(),
         selectedCard: null,
+        hint: null,
         isDemoMode: false,
         isStalemate: false,
         wonByDemo: false,
@@ -322,7 +365,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     drawFromStock: () => {
       const { engine } = get();
       engine.drawFromStock();
-      set({ state: engine.getState(), selectedCard: null });
+      set({ state: engine.getState(), selectedCard: null, hint: null });
     },
 
     moveCard: (from: CardLocation, to: CardLocation) => {
@@ -330,34 +373,36 @@ export const useGameStore = create<GameStore>((set, get) => {
       const preState = engine.getState();
       const legalMoves = engine.findLegalMoves();
       if (engine.moveCard(from, to)) logMove(preState, legalMoves, { from, to });
-      set({ state: engine.getState(), selectedCard: null });
+      set({ state: engine.getState(), selectedCard: null, hint: null });
     },
 
     autoComplete: () => {
       const { engine } = get();
       engine.autoComplete();
-      set({ state: engine.getState(), selectedCard: null });
+      set({ state: engine.getState(), selectedCard: null, hint: null });
     },
 
     undo: () => {
       const { engine } = get();
       engine.undo();
-      set({ state: engine.getState(), selectedCard: null, wonByDemo: false });
+      set({ state: engine.getState(), selectedCard: null, hint: null, wonByDemo: false });
     },
 
     redo: () => {
       const { engine } = get();
       engine.redo();
-      set({ state: engine.getState(), selectedCard: null });
+      set({ state: engine.getState(), selectedCard: null, hint: null });
     },
 
     reset: () => {
       clearDemoTimer();
-      const engine = new KlondikeEngine();
+      const { drawCount } = get();
+      const engine = new KlondikeEngine(drawCount);
       set({
         engine,
         state: engine.getState(),
         selectedCard: null,
+        hint: null,
         isDemoMode: false,
         isStalemate: false,
         wonByDemo: false,
@@ -371,8 +416,57 @@ export const useGameStore = create<GameStore>((set, get) => {
       });
     },
 
+    setDrawCount: (count: DrawCount) => {
+      saveDrawCount(count);
+      const { engine } = get();
+      engine.setDrawCount(count);
+      set({ drawCount: count });
+    },
+
+    setScoringMode: (mode: ScoringMode) => {
+      saveScoringMode(mode);
+      set({ scoringMode: mode });
+    },
+
+    requestHint: () => {
+      const { engine, recentMoves, recentStates, consecutiveStockDraws, movesSinceFoundation } = get();
+      const legalMoves = engine.findLegalMoves();
+      if (legalMoves.length === 0) {
+        set({ hint: null });
+        return;
+      }
+
+      const simulate: MoveSimulator = (move) => {
+        const ok = engine.moveCard(move.from, move.to);
+        if (!ok) return null;
+        const s = engine.getState();
+        engine.undo();
+        return { ...s, lastActionLog: [] };
+      };
+
+      const best = findBestMove(
+        engine.getState(),
+        legalMoves,
+        {
+          recentMoves,
+          recentStates,
+          consecutiveStockDraws,
+          movesSinceFoundation,
+        },
+        simulate,
+      );
+
+      set({ hint: best });
+      // Auto-clear after 4 seconds
+      setTimeout(() => {
+        if (get().hint === best) set({ hint: null });
+      }, 4000);
+    },
+
+    clearHint: () => set({ hint: null }),
+
     selectCard: (location: CardLocation | null) => {
-      set({ selectedCard: location });
+      set({ selectedCard: location, hint: null });
     },
 
     startDemo: () => {
@@ -383,6 +477,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         isDemoMode: true,
         isStalemate: false,
         wonByDemo: false,
+        hint: null,
         recentMoves: [],
         recentStates: [hashState(state)],
         movesSinceFoundation: 0,
