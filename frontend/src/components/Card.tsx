@@ -11,10 +11,6 @@ interface CardProps {
   className?: string;
 }
 
-function getRankDisplay(rank: string): string {
-  return rank;
-}
-
 function getSuitColor(suit: Suit): string {
   return isRed(suit) ? "text-red-600" : "text-gray-900";
 }
@@ -41,6 +37,104 @@ const innerStyle = {
 const fontRank = { fontSize: "var(--card-font-rank)" };
 const fontSuit = { fontSize: "var(--card-font-suit)" };
 const fontCenter = { fontSize: "var(--card-font-center)" };
+
+/** Traditional pip positions for number cards (percent of card face). */
+const PIP_LAYOUTS: Record<string, { top: string; left: string }[]> = {
+  A: [{ top: "50%", left: "50%" }],
+  "2": [
+    { top: "22%", left: "50%" },
+    { top: "78%", left: "50%" },
+  ],
+  "3": [
+    { top: "18%", left: "50%" },
+    { top: "50%", left: "50%" },
+    { top: "82%", left: "50%" },
+  ],
+  "4": [
+    { top: "20%", left: "28%" },
+    { top: "20%", left: "72%" },
+    { top: "80%", left: "28%" },
+    { top: "80%", left: "72%" },
+  ],
+  "5": [
+    { top: "18%", left: "28%" },
+    { top: "18%", left: "72%" },
+    { top: "50%", left: "50%" },
+    { top: "82%", left: "28%" },
+    { top: "82%", left: "72%" },
+  ],
+  "6": [
+    { top: "18%", left: "28%" },
+    { top: "18%", left: "72%" },
+    { top: "50%", left: "28%" },
+    { top: "50%", left: "72%" },
+    { top: "82%", left: "28%" },
+    { top: "82%", left: "72%" },
+  ],
+  "7": [
+    { top: "16%", left: "28%" },
+    { top: "16%", left: "72%" },
+    { top: "38%", left: "50%" },
+    { top: "50%", left: "28%" },
+    { top: "50%", left: "72%" },
+    { top: "84%", left: "28%" },
+    { top: "84%", left: "72%" },
+  ],
+  "8": [
+    { top: "16%", left: "28%" },
+    { top: "16%", left: "72%" },
+    { top: "38%", left: "28%" },
+    { top: "38%", left: "72%" },
+    { top: "62%", left: "28%" },
+    { top: "62%", left: "72%" },
+    { top: "84%", left: "28%" },
+    { top: "84%", left: "72%" },
+  ],
+  "9": [
+    { top: "14%", left: "28%" },
+    { top: "14%", left: "72%" },
+    { top: "32%", left: "28%" },
+    { top: "32%", left: "72%" },
+    { top: "50%", left: "50%" },
+    { top: "68%", left: "28%" },
+    { top: "68%", left: "72%" },
+    { top: "86%", left: "28%" },
+    { top: "86%", left: "72%" },
+  ],
+  "10": [
+    { top: "12%", left: "28%" },
+    { top: "12%", left: "72%" },
+    { top: "28%", left: "28%" },
+    { top: "28%", left: "72%" },
+    { top: "44%", left: "50%" },
+    { top: "56%", left: "28%" },
+    { top: "56%", left: "72%" },
+    { top: "72%", left: "28%" },
+    { top: "72%", left: "72%" },
+    { top: "88%", left: "28%" },
+    { top: "88%", left: "72%" },
+  ],
+};
+
+function NumberPips({ rank, suit }: { rank: string; suit: Suit }) {
+  const layout = PIP_LAYOUTS[rank];
+  if (!layout) return null;
+  const symbol = getSuitSymbol(suit);
+  const color = getSuitColor(suit);
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {layout.map((pos, i) => (
+        <span
+          key={i}
+          className={`absolute -translate-x-1/2 -translate-y-1/2 font-bold ${color}`}
+          style={{ top: pos.top, left: pos.left, fontSize: "var(--card-font-suit)" }}
+        >
+          {symbol}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function Card({
   card,
@@ -76,11 +170,14 @@ export default function Card({
     );
   }
 
+  const isFace = ["J", "Q", "K"].includes(card.rank);
+  const colorClass = getSuitColor(card.suit);
+
   return (
     <div
       ref={setNodeRef}
       className={`card bg-gradient-to-b from-white to-gray-50 border-gray-200 shadow-xl
-                 flex flex-col justify-between cursor-grab active:cursor-grabbing select-none
+                 flex flex-col justify-between cursor-grab active:cursor-grabbing select-none relative
                  ${isDragging ? "shadow-2xl" : "hover:shadow-2xl"}
                  transition-all duration-150 ${className}`}
       style={{ ...cardStyle, ...style } as React.CSSProperties}
@@ -90,25 +187,29 @@ export default function Card({
       {...attributes}
     >
       <div
-        className={`flex flex-col items-start leading-none ${getSuitColor(card.suit)}`}
+        className={`flex flex-col items-start leading-none z-10 ${colorClass}`}
         style={{ padding: "var(--card-pad)" }}
       >
         <span className="font-bold tracking-tight" style={fontRank}>
-          {getRankDisplay(card.rank)}
+          {card.rank}
         </span>
         <span className="-mt-0.5" style={fontSuit}>{getSuitSymbol(card.suit)}</span>
       </div>
 
-      <div className={`flex-1 flex items-center justify-center ${getSuitColor(card.suit)} opacity-90`}>
-        <span style={fontCenter}>{getSuitSymbol(card.suit)}</span>
-      </div>
+      {isFace ? (
+        <div className={`flex-1 flex items-center justify-center ${colorClass} opacity-90 z-10`}>
+          <span style={fontCenter}>{getSuitSymbol(card.suit)}</span>
+        </div>
+      ) : (
+        <NumberPips rank={card.rank} suit={card.suit} />
+      )}
 
       <div
-        className={`flex flex-col items-end rotate-180 leading-none ${getSuitColor(card.suit)}`}
+        className={`flex flex-col items-end rotate-180 leading-none z-10 ${colorClass}`}
         style={{ padding: "var(--card-pad)" }}
       >
         <span className="font-bold tracking-tight" style={fontRank}>
-          {getRankDisplay(card.rank)}
+          {card.rank}
         </span>
         <span className="-mt-0.5" style={fontSuit}>{getSuitSymbol(card.suit)}</span>
       </div>
