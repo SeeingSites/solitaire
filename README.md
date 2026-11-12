@@ -11,9 +11,9 @@ A polished Klondike Solitaire game built with React, TypeScript, and Vite.
 - Auto-complete when all cards are face-up
 - Undo / Redo
 - Watch Demo mode powered by a strong AI solver
-- **Seeded deals** — every game has a seed number so you can replay the exact same layout
+- **Seeded deals** — every game has a seed number. Click the seed to copy it, or enter a seed to replay that exact layout
 - Dark / light theme
-- Responsive design with improved mobile touch targets
+- Responsive design with improved mobile touch targets and larger cards on small screens
 - Traditional pip layouts on number cards
 - Move counter, live timer, and score
 - Web Audio sound effects with mute toggle
@@ -70,7 +70,7 @@ Controls: click / drag / double-click · Undo · Redo · Hint · Auto Complete �
 
 Keyboard: `U` Undo, `R` Redo, `H` Hint, `A` Auto Complete, `N` New Game, `D` Draw from stock.
 
-The deal seed is shown in the status bar — share it to let someone else play the exact same layout.
+The deal seed is shown in the status bar — click it to copy. Enter a seed in the input below the status bar and click **Play Seed** to replay that exact layout.
 
 ## License
 
