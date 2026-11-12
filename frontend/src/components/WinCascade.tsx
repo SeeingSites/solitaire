@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useGameStore } from "../store/useGameStore";
-import { Card as CardType, SolitaireState, Suit } from "../game/types";
-import { SUIT_SYMBOLS, getCardWidth, getCardHeight, getCardOverlap } from "../game/constants";
-import { isRed } from "../game/Deck";
+import { Card as CardType, SolitaireState, Suit, Rank } from "../game/types";
+import { getCardWidth, getCardHeight, getCardOverlap } from "../game/constants";
 
 const GAP = 16;
 const SPACER = 32;
@@ -19,12 +18,33 @@ interface CascadeCard {
   zIndex: number;
 }
 
-function getSuitSymbol(suit: Suit): string {
-  return SUIT_SYMBOLS[suit];
-}
+const RANK_MAP: Record<Rank, string> = {
+  A: "ace",
+  "2": "2",
+  "3": "3",
+  "4": "4",
+  "5": "5",
+  "6": "6",
+  "7": "7",
+  "8": "8",
+  "9": "9",
+  "10": "10",
+  J: "jack",
+  Q: "queen",
+  K: "king",
+};
 
-function getSuitColor(suit: Suit): string {
-  return isRed(suit) ? "#dc2626" : "#1f2937";
+const SUIT_MAP: Record<Suit, string> = {
+  hearts: "hearts",
+  diamonds: "diamonds",
+  clubs: "clubs",
+  spades: "spades",
+};
+
+const CDN = "https://cdn.jsdelivr.net/gh/hayeah/playing-cards-assets@master/svg-cards";
+
+function getCardSvgUrl(rank: Rank, suit: Suit): string {
+  return `${CDN}/${RANK_MAP[rank]}_of_${SUIT_MAP[suit]}.svg`;
 }
 
 function calculateCardPositions(state: SolitaireState): CascadeCard[] {
@@ -60,26 +80,18 @@ function calculateCardPositions(state: SolitaireState): CascadeCard[] {
     });
   };
 
-  for (const card of state.stock) {
-    addCard(card, stockX, topRowY);
-  }
-
-  for (const card of state.waste) {
-    addCard(card, wasteX, topRowY);
-  }
+  for (const card of state.stock) addCard(card, stockX, topRowY);
+  for (const card of state.waste) addCard(card, wasteX, topRowY);
 
   for (let f = 0; f < FOUNDATION_COUNT; f++) {
     const fx = foundationStartX + f * (CARD_W + GAP);
-    for (const card of state.foundations[f]) {
-      addCard(card, fx, topRowY);
-    }
+    for (const card of state.foundations[f]) addCard(card, fx, topRowY);
   }
 
   for (let t = 0; t < TABLEAU_COUNT; t++) {
     const tx = tableauStartX + t * (CARD_W + tableauGap);
     for (let i = 0; i < state.tableau[t].length; i++) {
-      const card = state.tableau[t][i];
-      addCard(card, tx, tableauRowY + i * OVERLAP);
+      addCard(state.tableau[t][i], tx, tableauRowY + i * OVERLAP);
     }
   }
 
@@ -87,73 +99,31 @@ function calculateCardPositions(state: SolitaireState): CascadeCard[] {
 }
 
 function CascadeCardFace({ card }: { card: CardType }) {
-  const fontCenter = { fontSize: "var(--card-font-center)" };
-  const fontRank = { fontSize: "var(--card-font-rank)" };
-  const fontSuit = { fontSize: "var(--card-font-suit)" };
-
   const cardStyle = {
     width: "var(--card-w)",
     height: "var(--card-h)",
     borderRadius: "var(--card-radius)",
     borderWidth: "var(--card-border)",
     borderStyle: "solid",
+    overflow: "hidden",
   } as React.CSSProperties;
-
-  const innerStyle = {
-    width: "calc(var(--card-w) - var(--card-border) * 2 - 4px)",
-    height: "calc(var(--card-h) - var(--card-border) * 2 - 4px)",
-    borderRadius: "calc(var(--card-radius) - 2px)",
-  };
 
   if (!card.faceUp) {
     return (
-      <div
-        className="card-back bg-gradient-to-br from-blue-800 to-blue-900 border-blue-700 shadow-lg flex items-center justify-center"
-        style={cardStyle}
-      >
-        <div
-          className="rounded border border-blue-600 flex items-center justify-center"
-          style={innerStyle}
-        >
-          <span className="text-blue-400" style={fontCenter}>
-            &#9824;
-          </span>
-        </div>
+      <div className="card-back border-blue-800 shadow-lg flex items-center justify-center" style={cardStyle}>
+        <span className="text-blue-300 text-xl">♠</span>
       </div>
     );
   }
 
-  const color = getSuitColor(card.suit);
-  const symbol = getSuitSymbol(card.suit);
-
   return (
-    <div
-      className="bg-white border-gray-300 shadow-lg flex flex-col justify-between select-none"
-      style={cardStyle}
-    >
-      <div
-        className="flex flex-col items-start leading-none"
-        style={{ color, padding: "var(--card-pad)" }}
-      >
-        <span className="font-bold" style={fontRank}>
-          {card.rank}
-        </span>
-        <span style={fontSuit}>{symbol}</span>
-      </div>
-      <div className="flex-1 flex items-center justify-center" style={{ color }}>
-        <span style={fontCenter}>{symbol}</span>
-      </div>
-      <div
-        className="flex flex-col items-end rotate-180 leading-none"
-        style={{ color, padding: "var(--card-pad)" }}
-      >
-        <span className="font-bold" style={fontRank}>
-          {card.rank}
-        </span>
-        <span className="leading-none" style={fontSuit}>
-          {symbol}
-        </span>
-      </div>
+    <div className="bg-white border-gray-300 shadow-lg overflow-hidden" style={cardStyle}>
+      <img
+        src={getCardSvgUrl(card.rank, card.suit)}
+        alt=""
+        className="w-full h-full object-contain"
+        draggable={false}
+      />
     </div>
   );
 }

@@ -13,8 +13,8 @@ A polished Klondike Solitaire game built with React, TypeScript, and Vite.
 - Watch Demo mode powered by a strong AI solver
 - **Seeded deals** — every game has a seed number. Click the seed to copy it, or enter a seed to replay that exact layout
 - Dark / light theme
-- Responsive design with improved mobile touch targets and larger cards on small screens
-- Traditional pip layouts on number cards
+- Responsive design with improved mobile touch targets
+- **High-quality SVG card art** (public-domain / MIT, via jsDelivr CDN from [hayeah/playing-cards-assets](https://github.com/hayeah/playing-cards-assets))
 - Move counter, live timer, and score
 - Web Audio sound effects with mute toggle
 - Win cascade celebration + stalemate detection
@@ -71,6 +71,10 @@ Controls: click / drag / double-click · Undo · Redo · Hint · Auto Complete �
 Keyboard: `U` Undo, `R` Redo, `H` Hint, `A` Auto Complete, `N` New Game, `D` Draw from stock.
 
 The deal seed is shown in the status bar — click it to copy. Enter a seed in the input below the status bar and click **Play Seed** to replay that exact layout.
+
+## Card Art
+
+Card faces use high-quality SVGs from the public-domain vector playing cards project (processed and MIT-licensed by [hayeah/playing-cards-assets](https://github.com/hayeah/playing-cards-assets)), loaded via jsDelivr CDN.
 
 ## License
 
