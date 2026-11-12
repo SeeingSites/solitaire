@@ -16,7 +16,7 @@ function getRankDisplay(rank: string): string {
 }
 
 function getSuitColor(suit: Suit): string {
-  return isRed(suit) ? "text-card-red" : "text-card-black";
+  return isRed(suit) ? "text-red-600" : "text-gray-900";
 }
 
 function getSuitSymbol(suit: Suit): string {
@@ -33,9 +33,9 @@ const cardStyle = {
 } as React.CSSProperties;
 
 const innerStyle = {
-  width: "calc(var(--card-w) - var(--card-border) * 2 - 4px)",
-  height: "calc(var(--card-h) - var(--card-border) * 2 - 4px)",
-  borderRadius: "calc(var(--card-radius) - 2px)",
+  width: "calc(var(--card-w) - var(--card-border) * 2 - 6px)",
+  height: "calc(var(--card-h) - var(--card-border) * 2 - 6px)",
+  borderRadius: "calc(var(--card-radius) - 3px)",
 };
 
 const fontRank = { fontSize: "var(--card-font-rank)" };
@@ -54,23 +54,21 @@ export default function Card({
     disabled: !card.faceUp,
   });
 
-  const style = isDragging ? { opacity: 0.4, zIndex: 100 } : {};
+  const style = isDragging ? { opacity: 0.45, zIndex: 100, transform: "scale(1.05) rotate(1.5deg)" } : {};
 
   if (!card.faceUp) {
     return (
       <div
-        className={`card-back bg-gradient-to-br from-blue-800 to-blue-900
-                   border-blue-700 shadow-lg flex items-center justify-center
-                   ${className}`}
+        className={`card-back border-blue-800 shadow-xl flex items-center justify-center ${className}`}
         style={cardStyle}
         onClick={onClick}
         onDoubleClick={onDoubleClick}
       >
         <div
-          className="rounded border border-blue-600 flex items-center justify-center"
+          className="rounded border-2 border-blue-500/60 flex items-center justify-center bg-blue-900/40"
           style={innerStyle}
         >
-          <span className="text-blue-400" style={fontCenter}>
+          <span className="text-blue-300 font-bold" style={fontCenter}>
             ♠
           </span>
         </div>
@@ -81,9 +79,9 @@ export default function Card({
   return (
     <div
       ref={setNodeRef}
-      className={`card bg-white border-gray-300 shadow-lg
+      className={`card bg-gradient-to-b from-white to-gray-50 border-gray-200 shadow-xl
                  flex flex-col justify-between cursor-grab active:cursor-grabbing select-none
-                 ${isDragging ? "shadow-2xl scale-105" : "hover:shadow-xl hover:-translate-y-1"}
+                 ${isDragging ? "shadow-2xl" : "hover:shadow-2xl"}
                  transition-all duration-150 ${className}`}
       style={{ ...cardStyle, ...style } as React.CSSProperties}
       onClick={onClick}
@@ -95,13 +93,13 @@ export default function Card({
         className={`flex flex-col items-start leading-none ${getSuitColor(card.suit)}`}
         style={{ padding: "var(--card-pad)" }}
       >
-        <span className="font-bold" style={fontRank}>
+        <span className="font-bold tracking-tight" style={fontRank}>
           {getRankDisplay(card.rank)}
         </span>
-        <span style={fontSuit}>{getSuitSymbol(card.suit)}</span>
+        <span className="-mt-0.5" style={fontSuit}>{getSuitSymbol(card.suit)}</span>
       </div>
 
-      <div className={`flex-1 flex items-center justify-center ${getSuitColor(card.suit)}`}>
+      <div className={`flex-1 flex items-center justify-center ${getSuitColor(card.suit)} opacity-90`}>
         <span style={fontCenter}>{getSuitSymbol(card.suit)}</span>
       </div>
 
@@ -109,10 +107,10 @@ export default function Card({
         className={`flex flex-col items-end rotate-180 leading-none ${getSuitColor(card.suit)}`}
         style={{ padding: "var(--card-pad)" }}
       >
-        <span className="font-bold" style={fontRank}>
+        <span className="font-bold tracking-tight" style={fontRank}>
           {getRankDisplay(card.rank)}
         </span>
-        <span style={fontSuit}>{getSuitSymbol(card.suit)}</span>
+        <span className="-mt-0.5" style={fontSuit}>{getSuitSymbol(card.suit)}</span>
       </div>
     </div>
   );
