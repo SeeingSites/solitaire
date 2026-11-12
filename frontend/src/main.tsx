@@ -1,3 +1,5 @@
+import { Capacitor } from "@capacitor/core";
+import { StatusBar, Style } from "@capacitor/status-bar";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
@@ -14,11 +16,17 @@ ReactDOM.createRoot(root).render(
 
 // Offline support: cache the game so it works with no connection after one
 // visit. Production web builds only; never inside a native app shell.
+// (@capacitor/core defines window.Capacitor on the web too, so ask it directly.)
 if (
   import.meta.env.PROD &&
   "serviceWorker" in navigator &&
   window.isSecureContext &&
-  !(window as { Capacitor?: unknown }).Capacitor
+  !Capacitor.isNativePlatform()
 ) {
   navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
+
+// iOS app: light status-bar text over the blue table.
+if (Capacitor.isNativePlatform()) {
+  StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
 }
