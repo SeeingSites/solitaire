@@ -15,11 +15,17 @@ export class KlondikeEngine implements SolitaireEngine {
   private lastActionLog: string[] = [];
   private drawCount: 1 | 3 = 1;
   private vegasRules = false;
+  private seed: number;
 
-  constructor(drawCount: 1 | 3 = 1, vegasRules = false) {
+  constructor(drawCount: 1 | 3 = 1, vegasRules = false, seed?: number) {
     this.drawCount = drawCount;
     this.vegasRules = vegasRules;
+    this.seed = seed ?? Math.floor(Math.random() * 1_000_000_000);
     this.initGame();
+  }
+
+  getSeed(): number {
+    return this.seed;
   }
 
   setDrawCount(count: 1 | 3): void {
@@ -38,8 +44,9 @@ export class KlondikeEngine implements SolitaireEngine {
     return this.vegasRules;
   }
 
-  initGame(): void {
-    this.stock = shuffleDeck(createDeck());
+  initGame(seed?: number): void {
+    if (seed !== undefined) this.seed = seed;
+    this.stock = shuffleDeck(createDeck(), this.seed);
     this.waste = [];
     this.foundations = [[], [], [], []];
     this.tableau = [[], [], [], [], [], [], []];
@@ -59,7 +66,7 @@ export class KlondikeEngine implements SolitaireEngine {
       }
     }
 
-    this.log("Game started");
+    this.log(`Game started (seed ${this.seed})`);
   }
 
   getState(): SolitaireState {
