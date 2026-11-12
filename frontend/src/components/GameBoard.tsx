@@ -38,9 +38,9 @@ export default function GameBoard() {
     drawCount,
     setDrawCount,
     scoringMode,
-    setScoringMode,
     vegasRules,
     setVegasRules,
+    dealSeed,
     hint,
     requestHint,
     clearHint,
@@ -77,6 +77,40 @@ export default function GameBoard() {
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [state.moveCount > 0]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isDemoMode || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const key = e.key.toLowerCase();
+      if (key === "u" && state.moveCount > 0) {
+        e.preventDefault();
+        sound.click();
+        undo();
+      } else if (key === "r") {
+        e.preventDefault();
+        sound.click();
+        redo();
+      } else if (key === "h") {
+        e.preventDefault();
+        sound.click();
+        requestHint();
+      } else if (key === "n") {
+        e.preventDefault();
+        handleNewGame();
+      } else if (key === "a") {
+        e.preventDefault();
+        sound.move();
+        autoComplete();
+      } else if (key === "d") {
+        e.preventDefault();
+        sound.draw();
+        drawFromStock();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isDemoMode, state.moveCount, undo, redo, requestHint, autoComplete, drawFromStock]);
 
   const handleCascadeComplete = useCallback(() => {
     setCascadeDone(true);
@@ -203,6 +237,7 @@ export default function GameBoard() {
             disabled={!canUndo}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm min-h-[36px]"
+            title="Undo (U)"
           >
             Undo
           </button>
@@ -211,6 +246,7 @@ export default function GameBoard() {
             disabled={isDemoMode}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm min-h-[36px]"
+            title="Redo (R)"
           >
             Redo
           </button>
@@ -219,7 +255,7 @@ export default function GameBoard() {
             disabled={isDemoMode}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm min-h-[36px]"
-            title="Show AI-suggested move"
+            title="Hint (H)"
           >
             Hint
           </button>
@@ -228,6 +264,7 @@ export default function GameBoard() {
             disabled={isDemoMode}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500
                      disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm min-h-[36px]"
+            title="Auto Complete (A)"
           >
             Auto Complete
           </button>
@@ -327,6 +364,9 @@ export default function GameBoard() {
           </span>
           <span>Foundations: {foundationCount}/52</span>
           <span className="text-[10px] sm:text-xs opacity-70">Draw {drawCount}</span>
+          <span className="text-[10px] sm:text-xs opacity-70" title="Deal seed — use this to replay the same layout">
+            Seed: {dealSeed}
+          </span>
           {vegasRules && (
             <span className="text-[10px] sm:text-xs text-amber-300">No Redeals</span>
           )}
@@ -405,10 +445,11 @@ export default function GameBoard() {
                 {isDemoMode || wonByDemo ? "Demo Complete!" : "You Win!"}
               </h2>
               <p className="text-amber-50 text-lg mb-2">Completed in {state.moveCount} moves</p>
-              <p className="text-amber-100 mb-6">
+              <p className="text-amber-100 mb-2">
                 Time: {mins}:{secs} · Score: {score}
                 {vegasRules ? " (Vegas)" : ""}
               </p>
+              <p className="text-amber-200 text-sm mb-6">Seed: {dealSeed}</p>
               <button
                 onClick={handleNewGame}
                 className="px-8 py-3 bg-white text-amber-700 font-bold rounded-xl hover:bg-amber-50 transition-all hover:scale-105 shadow-lg"
@@ -427,7 +468,7 @@ export default function GameBoard() {
                 The game is stuck with no productive moves remaining.
               </p>
               <p className="text-red-200 text-sm mb-6">
-                Foundation: {foundationCount}/52 | Moves: {state.moveCount}
+                Foundation: {foundationCount}/52 | Moves: {state.moveCount} | Seed: {dealSeed}
               </p>
               <button
                 onClick={handleNewGame}
