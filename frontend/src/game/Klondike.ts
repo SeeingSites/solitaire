@@ -14,9 +14,11 @@ export class KlondikeEngine implements SolitaireEngine {
   private moveCount = 0;
   private lastActionLog: string[] = [];
   private drawCount: 1 | 3 = 1;
+  private vegasRules = false;
 
-  constructor(drawCount: 1 | 3 = 1) {
+  constructor(drawCount: 1 | 3 = 1, vegasRules = false) {
     this.drawCount = drawCount;
+    this.vegasRules = vegasRules;
     this.initGame();
   }
 
@@ -26,6 +28,14 @@ export class KlondikeEngine implements SolitaireEngine {
 
   getDrawCount(): 1 | 3 {
     return this.drawCount;
+  }
+
+  setVegasRules(enabled: boolean): void {
+    this.vegasRules = enabled;
+  }
+
+  getVegasRules(): boolean {
+    return this.vegasRules;
   }
 
   initGame(): void {
@@ -73,9 +83,12 @@ export class KlondikeEngine implements SolitaireEngine {
     return true;
   }
 
-  /** Draw up to drawCount cards (recycling the waste first if the stock is empty). */
+  /** Draw up to drawCount cards. In Vegas rules, waste is never recycled. */
   private applyDraw(): MoveRecord | null {
     if (this.stock.length === 0 && this.waste.length === 0) return null;
+
+    // Vegas: no redeals — once stock is empty you cannot recycle waste
+    if (this.vegasRules && this.stock.length === 0) return null;
 
     const reshuffled = this.stock.length === 0;
     if (reshuffled) {
@@ -114,7 +127,6 @@ export class KlondikeEngine implements SolitaireEngine {
       card.faceUp = false;
       returned.push(card);
     }
-    // Restore in reverse order so stock order is preserved
     for (let i = returned.length - 1; i >= 0; i--) {
       this.stock.push(returned[i]);
     }
