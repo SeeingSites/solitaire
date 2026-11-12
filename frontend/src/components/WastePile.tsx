@@ -7,6 +7,7 @@ interface WastePileProps {
   onClick?: () => void;
   onDoubleClick?: () => void;
   isDropTarget?: boolean;
+  isHinted?: boolean;
 }
 
 const cardStyle = {
@@ -15,7 +16,13 @@ const cardStyle = {
   borderRadius: "var(--card-radius)",
 };
 
-export default function WastePile({ cards, onClick, onDoubleClick, isDropTarget }: WastePileProps) {
+export default function WastePile({
+  cards,
+  onClick,
+  onDoubleClick,
+  isDropTarget,
+  isHinted,
+}: WastePileProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: "waste",
   });
@@ -26,8 +33,10 @@ export default function WastePile({ cards, onClick, onDoubleClick, isDropTarget 
   return (
     <div
       ref={setNodeRef}
-      className={`relative rounded-lg border-2 border-dashed
-                 ${isActive ? "border-green-500 bg-green-500/10" : "border-gray-600 bg-gray-800/50"}
+      className={`relative rounded-lg border-2 border-dashed touch-manipulation
+                 ${isHinted ? "border-amber-400 bg-amber-400/20 shadow-lg shadow-amber-400/40 animate-pulse" : ""}
+                 ${isActive && !isHinted ? "border-green-500 bg-green-500/10" : ""}
+                 ${!isActive && !isHinted ? "border-gray-600 bg-gray-800/50" : ""}
                  flex items-center justify-center cursor-pointer`}
       style={cardStyle}
       onClick={onClick}

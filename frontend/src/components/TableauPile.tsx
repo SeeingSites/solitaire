@@ -8,6 +8,8 @@ interface TableauPileProps {
   onCardClick?: (cardIndex: number) => void;
   onCardDoubleClick?: (cardIndex: number) => void;
   isDropTarget?: boolean;
+  isHintSource?: boolean;
+  isHintTarget?: boolean;
 }
 
 const cardStyle = {
@@ -21,18 +23,23 @@ export default function TableauPile({
   onCardClick,
   onCardDoubleClick,
   isDropTarget,
+  isHintSource,
+  isHintTarget,
 }: TableauPileProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `tableau-${pileIndex}`,
   });
 
   const isActive = isDropTarget || isOver;
+  const isHinted = isHintSource || isHintTarget;
 
   return (
     <div
       ref={setNodeRef}
-      className={`relative rounded-lg border-2 border-dashed
-                 ${isActive ? "border-green-500 bg-green-500/10" : "border-gray-600/50 bg-transparent"}`}
+      className={`relative rounded-lg border-2 border-dashed touch-manipulation
+                 ${isHinted ? "border-amber-400 bg-amber-400/15" : ""}
+                 ${isActive && !isHinted ? "border-green-500 bg-green-500/10" : ""}
+                 ${!isActive && !isHinted ? "border-gray-600/50 bg-transparent" : ""}`}
       style={{
         ...cardStyle,
         minHeight: "var(--card-h)",

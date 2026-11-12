@@ -19,8 +19,8 @@ export default function StockPile({ count, onClick }: StockPileProps) {
   return (
     <div
       data-testid="stock-pile"
-      className={`relative border-2 border-gray-600
-                 ${count > 0 ? "bg-gradient-to-br from-blue-800 to-blue-900 cursor-pointer hover:shadow-lg" : "bg-gray-800/50"}
+      className={`relative border-2 border-gray-600 touch-manipulation
+                 ${count > 0 ? "bg-gradient-to-br from-blue-800 to-blue-900 cursor-pointer hover:shadow-lg active:scale-95" : "bg-gray-800/50"}
                  flex items-center justify-center transition-all duration-150`}
       style={cardStyle}
       onClick={onClick}
