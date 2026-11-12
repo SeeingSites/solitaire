@@ -13,6 +13,10 @@ A classic Klondike Solitaire card game built with React, TypeScript, and Vite.
 - Move counter
 - Win detection
 
+## iOS app
+
+The game also builds as a native iOS app with Capacitor (`frontend/ios/`). See [`docs/ios.md`](docs/ios.md) for building, signing and App Store submission.
+
 ## Tech Stack
 
 - React 18
