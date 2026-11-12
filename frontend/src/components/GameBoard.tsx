@@ -35,6 +35,13 @@ export default function GameBoard() {
     startDemo,
     stopDemo,
     setDemoSpeed,
+    drawCount,
+    setDrawCount,
+    scoringMode,
+    setScoringMode,
+    hint,
+    requestHint,
+    clearHint,
   } = useGameStore();
 
   const [logsExist, setLogsExist] = useState(hasLogs);
@@ -42,7 +49,9 @@ export default function GameBoard() {
   const [soundOn, setSoundOn] = useState(sound.isEnabled());
 
   const foundationCount = state.foundations.reduce((sum, p) => sum + p.length, 0);
-  const score = foundationCount * 10 + Math.max(0, 100 - state.moveCount);
+  const standardScore = foundationCount * 10 + Math.max(0, 100 - state.moveCount);
+  const vegasScore = -52 + foundationCount * 5;
+  const score = scoringMode === "vegas" ? vegasScore : standardScore;
 
   const [cascadeDone, setCascadeDone] = useState(false);
   const [wasComplete, setWasComplete] = useState(state.isComplete);
@@ -163,6 +172,7 @@ export default function GameBoard() {
   const handleNewGame = () => {
     if (isDemoMode) stopDemo();
     setSeconds(0);
+    clearHint();
     useGameStore.getState().startGame();
   };
 
@@ -172,19 +182,25 @@ export default function GameBoard() {
     if (on) sound.click();
   };
 
+  const handleHint = () => {
+    if (isDemoMode) return;
+    sound.click();
+    requestHint();
+  };
+
   const canUndo = state.moveCount > 0 && !isDemoMode;
   const mins = Math.floor(seconds / 60);
   const secs = (seconds % 60).toString().padStart(2, "0");
 
   return (
     <DragDropProvider>
-      <div className="flex flex-col gap-3 sm:gap-6 p-2 sm:p-4">
+      <div className="flex flex-col gap-3 sm:gap-6 p-2 sm:p-4 touch-manipulation">
         <div className="flex flex-wrap justify-center gap-1.5 sm:gap-3">
           <button
             onClick={handleUndo}
             disabled={!canUndo}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm"
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm min-h-[36px]"
           >
             Undo
           </button>
@@ -192,15 +208,24 @@ export default function GameBoard() {
             onClick={handleRedo}
             disabled={isDemoMode}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm"
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm min-h-[36px]"
           >
             Redo
+          </button>
+          <button
+            onClick={handleHint}
+            disabled={isDemoMode}
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-500
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm min-h-[36px]"
+            title="Show AI-suggested move"
+          >
+            Hint
           </button>
           <button
             onClick={handleAutoComplete}
             disabled={isDemoMode}
             className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm min-h-[36px]"
           >
             Auto Complete
           </button>
@@ -211,7 +236,7 @@ export default function GameBoard() {
             <button
               onClick={stopDemo}
               className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-500
-                       transition-colors text-xs sm:text-sm font-bold animate-pulse"
+                       transition-colors text-xs sm:text-sm font-bold animate-pulse min-h-[36px]"
             >
               Stop Demo
             </button>
@@ -219,11 +244,47 @@ export default function GameBoard() {
             <button
               onClick={startDemo}
               className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500
-                       transition-colors text-xs sm:text-sm"
+                       transition-colors text-xs sm:text-sm min-h-[36px]"
             >
               Watch Demo
             </button>
           )}
+
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-800/80 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 backdrop-blur-sm">
+            <span className="text-[10px] sm:text-xs text-gray-400 mr-0.5 sm:mr-1">Draw:</span>
+            <button
+              onClick={() => setDrawCount(1)}
+              className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors min-h-[28px]
+                ${drawCount === 1 ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+            >
+              1
+            </button>
+            <button
+              onClick={() => setDrawCount(3)}
+              className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors min-h-[28px]
+                ${drawCount === 3 ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+            >
+              3
+            </button>
+          </div>
+
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-800/80 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 backdrop-blur-sm">
+            <span className="text-[10px] sm:text-xs text-gray-400 mr-0.5 sm:mr-1">Score:</span>
+            <button
+              onClick={() => setScoringMode("standard")}
+              className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors min-h-[28px]
+                ${scoringMode === "standard" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+            >
+              Std
+            </button>
+            <button
+              onClick={() => setScoringMode("vegas")}
+              className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors min-h-[28px]
+                ${scoringMode === "vegas" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+            >
+              Vegas
+            </button>
+          </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-800/80 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 backdrop-blur-sm">
             <span className="text-[10px] sm:text-xs text-gray-400 mr-0.5 sm:mr-1">Speed:</span>
@@ -231,7 +292,7 @@ export default function GameBoard() {
               <button
                 key={opt.value}
                 onClick={() => setDemoSpeed(opt.value)}
-                className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors
+                className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors min-h-[28px]
                   ${
                     demoSpeed === opt.value
                       ? "bg-purple-600 text-white"
@@ -245,19 +306,26 @@ export default function GameBoard() {
 
           <button
             onClick={toggleSound}
-            className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs sm:text-sm"
+            className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs sm:text-sm min-h-[36px]"
             title={soundOn ? "Mute sounds" : "Enable sounds"}
           >
             {soundOn ? "🔊" : "🔇"}
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-3 sm:gap-5 text-center text-amber-100/90 text-[11px] sm:text-sm font-medium">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-center text-amber-100/90 text-[11px] sm:text-sm font-medium">
           <span>Moves: {state.moveCount}</span>
           <span>Time: {mins}:{secs}</span>
-          <span>Score: {score}</span>
+          <span>
+            Score: {score}
+            {scoringMode === "vegas" && <span className="text-[10px] opacity-70"> (Vegas)</span>}
+          </span>
           <span>Foundations: {foundationCount}/52</span>
+          <span className="text-[10px] sm:text-xs opacity-70">Draw {drawCount}</span>
           {isDemoMode && <span className="text-purple-300 font-semibold">Demo Mode</span>}
+          {hint && (
+            <span className="text-amber-300 font-semibold animate-pulse">Hint active</span>
+          )}
           {logsExist && (
             <button
               onClick={exportLogs}
@@ -278,6 +346,7 @@ export default function GameBoard() {
             onClick={handleWasteClick}
             onDoubleClick={handleWasteDoubleClick}
             isDropTarget={selectedCard?.type === "waste" && !isDemoMode}
+            isHinted={hint?.from.type === "waste"}
           />
           <div className="w-2 sm:w-4" />
           {state.foundations.map((foundation, index) => (
@@ -287,6 +356,7 @@ export default function GameBoard() {
               index={index}
               onClick={() => handleFoundationClick(index)}
               isDropTarget={selectedCard !== null && !isDemoMode}
+              isHinted={hint?.to.type === "foundation" && hint.to.index === index}
               suitSymbol={
                 SUIT_SYMBOLS[
                   ["hearts", "diamonds", "clubs", "spades"][index] as keyof typeof SUIT_SYMBOLS
@@ -308,6 +378,12 @@ export default function GameBoard() {
               onCardClick={(cardIndex) => handleTableauClick(pileIndex, cardIndex)}
               onCardDoubleClick={(cardIndex) => handleTableauDoubleClick(pileIndex, cardIndex)}
               isDropTarget={selectedCard !== null && !isDemoMode}
+              isHintSource={
+                hint?.from.type === "tableau" && hint.from.pileIndex === pileIndex
+              }
+              isHintTarget={
+                hint?.to.type === "tableau" && hint.to.pileIndex === pileIndex
+              }
             />
           ))}
         </div>
@@ -321,7 +397,10 @@ export default function GameBoard() {
                 {isDemoMode || wonByDemo ? "Demo Complete!" : "You Win!"}
               </h2>
               <p className="text-amber-50 text-lg mb-2">Completed in {state.moveCount} moves</p>
-              <p className="text-amber-100 mb-6">Time: {mins}:{secs} · Score: {score}</p>
+              <p className="text-amber-100 mb-6">
+                Time: {mins}:{secs} · Score: {score}
+                {scoringMode === "vegas" ? " (Vegas)" : ""}
+              </p>
               <button
                 onClick={handleNewGame}
                 className="px-8 py-3 bg-white text-amber-700 font-bold rounded-xl hover:bg-amber-50 transition-all hover:scale-105 shadow-lg"
