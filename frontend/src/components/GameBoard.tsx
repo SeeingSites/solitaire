@@ -39,6 +39,8 @@ export default function GameBoard() {
     setDrawCount,
     scoringMode,
     setScoringMode,
+    vegasRules,
+    setVegasRules,
     hint,
     requestHint,
     clearHint,
@@ -51,7 +53,7 @@ export default function GameBoard() {
   const foundationCount = state.foundations.reduce((sum, p) => sum + p.length, 0);
   const standardScore = foundationCount * 10 + Math.max(0, 100 - state.moveCount);
   const vegasScore = -52 + foundationCount * 5;
-  const score = scoringMode === "vegas" ? vegasScore : standardScore;
+  const score = scoringMode === "vegas" || vegasRules ? vegasScore : standardScore;
 
   const [cascadeDone, setCascadeDone] = useState(false);
   const [wasComplete, setWasComplete] = useState(state.isComplete);
@@ -269,18 +271,19 @@ export default function GameBoard() {
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-800/80 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 backdrop-blur-sm">
-            <span className="text-[10px] sm:text-xs text-gray-400 mr-0.5 sm:mr-1">Score:</span>
+            <span className="text-[10px] sm:text-xs text-gray-400 mr-0.5 sm:mr-1">Rules:</span>
             <button
-              onClick={() => setScoringMode("standard")}
+              onClick={() => setVegasRules(false)}
               className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors min-h-[28px]
-                ${scoringMode === "standard" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+                ${!vegasRules ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
             >
-              Std
+              Standard
             </button>
             <button
-              onClick={() => setScoringMode("vegas")}
+              onClick={() => setVegasRules(true)}
               className={`px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium transition-colors min-h-[28px]
-                ${scoringMode === "vegas" ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+                ${vegasRules ? "bg-emerald-600 text-white" : "text-gray-400 hover:text-white hover:bg-gray-700"}`}
+              title="Vegas: no waste recycling + Vegas scoring (-52 + 5 per foundation card)"
             >
               Vegas
             </button>
@@ -318,10 +321,15 @@ export default function GameBoard() {
           <span>Time: {mins}:{secs}</span>
           <span>
             Score: {score}
-            {scoringMode === "vegas" && <span className="text-[10px] opacity-70"> (Vegas)</span>}
+            {(scoringMode === "vegas" || vegasRules) && (
+              <span className="text-[10px] opacity-70"> (Vegas)</span>
+            )}
           </span>
           <span>Foundations: {foundationCount}/52</span>
           <span className="text-[10px] sm:text-xs opacity-70">Draw {drawCount}</span>
+          {vegasRules && (
+            <span className="text-[10px] sm:text-xs text-amber-300">No Redeals</span>
+          )}
           {isDemoMode && <span className="text-purple-300 font-semibold">Demo Mode</span>}
           {hint && (
             <span className="text-amber-300 font-semibold animate-pulse">Hint active</span>
@@ -399,7 +407,7 @@ export default function GameBoard() {
               <p className="text-amber-50 text-lg mb-2">Completed in {state.moveCount} moves</p>
               <p className="text-amber-100 mb-6">
                 Time: {mins}:{secs} · Score: {score}
-                {scoringMode === "vegas" ? " (Vegas)" : ""}
+                {vegasRules ? " (Vegas)" : ""}
               </p>
               <button
                 onClick={handleNewGame}
