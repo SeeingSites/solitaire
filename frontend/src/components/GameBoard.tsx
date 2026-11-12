@@ -10,6 +10,7 @@ import { SUIT_SYMBOLS, FOUNDATION_SUITS } from "../game/constants";
 import { canStackOnFoundation } from "../game/Deck";
 import { CardLocation } from "../game/types";
 import { exportLogs, hasLogs } from "../game/PlayLogger";
+import { sound } from "../game/Sound";
 
 const SPEED_OPTIONS = [
   { label: "Slow", value: 1000 },
@@ -37,15 +38,18 @@ export default function GameBoard() {
   } = useGameStore();
 
   const [logsExist, setLogsExist] = useState(hasLogs);
+  const [seconds, setSeconds] = useState(0);
+  const [soundOn, setSoundOn] = useState(sound.isEnabled());
 
-  // The win cascade plays whenever the game becomes complete; finishing it
-  // shows the win overlay. Derived from state.isComplete rather than synced
-  // in an effect; a change in completion resets it (e.g. undo, new game).
+  const foundationCount = state.foundations.reduce((sum, p) => sum + p.length, 0);
+  const score = foundationCount * 10 + Math.max(0, 100 - state.moveCount);
+
   const [cascadeDone, setCascadeDone] = useState(false);
   const [wasComplete, setWasComplete] = useState(state.isComplete);
   if (state.isComplete !== wasComplete) {
     setWasComplete(state.isComplete);
     setCascadeDone(false);
+    if (state.isComplete) sound.win();
   }
   const cascadePhase = !state.isComplete ? "idle" : cascadeDone ? "done" : "cascading";
 
@@ -54,17 +58,28 @@ export default function GameBoard() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (state.moveCount === 0) {
+      setSeconds(0);
+      return;
+    }
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [state.moveCount > 0]);
+
   const handleCascadeComplete = useCallback(() => {
     setCascadeDone(true);
   }, []);
 
   const handleStockClick = () => {
     if (isDemoMode) return;
+    sound.draw();
     drawFromStock();
   };
 
   const handleWasteClick = () => {
     if (isDemoMode) return;
+    sound.click();
     if (selectedCard?.type === "waste") {
       selectCard(null);
     } else if (state.waste.length > 0) {
@@ -74,17 +89,21 @@ export default function GameBoard() {
 
   const handleFoundationClick = (index: number) => {
     if (isDemoMode) return;
+    sound.click();
     if (selectedCard) {
       const to: CardLocation = { type: "foundation", index };
       moveCard(selectedCard, to);
+      sound.foundation();
     }
   };
 
   const handleTableauClick = (pileIndex: number, cardIndex: number) => {
     if (isDemoMode) return;
+    sound.click();
     if (selectedCard) {
       const to: CardLocation = { type: "tableau", pileIndex, cardIndex };
       moveCard(selectedCard, to);
+      sound.move();
     } else {
       selectCard({ type: "tableau", pileIndex, cardIndex });
     }
@@ -94,6 +113,7 @@ export default function GameBoard() {
     for (let i = 0; i < 4; i++) {
       if (canStackOnFoundation(card as never, state.foundations[i], FOUNDATION_SUITS[i])) {
         moveCard({ type: "waste" }, { type: "foundation", index: i });
+        sound.foundation();
         return true;
       }
     }
@@ -116,6 +136,7 @@ export default function GameBoard() {
     for (let i = 0; i < 4; i++) {
       if (canStackOnFoundation(card as never, state.foundations[i], FOUNDATION_SUITS[i])) {
         moveCard({ type: "tableau", pileIndex, cardIndex }, { type: "foundation", index: i });
+        sound.foundation();
         return;
       }
     }
@@ -123,44 +144,55 @@ export default function GameBoard() {
 
   const handleAutoComplete = () => {
     if (isDemoMode) return;
+    sound.move();
     autoComplete();
   };
 
   const handleUndo = () => {
     if (isDemoMode) return;
+    sound.click();
     undo();
   };
 
   const handleRedo = () => {
     if (isDemoMode) return;
+    sound.click();
     redo();
   };
 
   const handleNewGame = () => {
     if (isDemoMode) stopDemo();
+    setSeconds(0);
     useGameStore.getState().startGame();
   };
 
+  const toggleSound = () => {
+    const on = sound.toggle();
+    setSoundOn(on);
+    if (on) sound.click();
+  };
+
   const canUndo = state.moveCount > 0 && !isDemoMode;
+  const mins = Math.floor(seconds / 60);
+  const secs = (seconds % 60).toString().padStart(2, "0");
 
   return (
     <DragDropProvider>
       <div className="flex flex-col gap-3 sm:gap-6 p-2 sm:p-4">
-        {/* Controls - top of page for mobile accessibility */}
         <div className="flex flex-wrap justify-center gap-1.5 sm:gap-3">
           <button
             onClick={handleUndo}
             disabled={!canUndo}
-            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm"
           >
             Undo
           </button>
           <button
             onClick={handleRedo}
             disabled={isDemoMode}
-            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600
-                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm"
+            className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600
+                     disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs sm:text-sm backdrop-blur-sm"
           >
             Redo
           </button>
@@ -173,10 +205,8 @@ export default function GameBoard() {
             Auto Complete
           </button>
 
-          {/* Separator */}
           <div className="w-px bg-gray-600 mx-0.5 sm:mx-1" />
 
-          {/* Demo controls */}
           {isDemoMode ? (
             <button
               onClick={stopDemo}
@@ -195,8 +225,7 @@ export default function GameBoard() {
             </button>
           )}
 
-          {/* Speed selector */}
-          <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-800 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-800/80 rounded-lg px-1.5 sm:px-2 py-0.5 sm:py-1 backdrop-blur-sm">
             <span className="text-[10px] sm:text-xs text-gray-400 mr-0.5 sm:mr-1">Speed:</span>
             {SPEED_OPTIONS.map((opt) => (
               <button
@@ -213,25 +242,32 @@ export default function GameBoard() {
               </button>
             ))}
           </div>
+
+          <button
+            onClick={toggleSound}
+            className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-700/90 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs sm:text-sm"
+            title={soundOn ? "Mute sounds" : "Enable sounds"}
+          >
+            {soundOn ? "🔊" : "🔇"}
+          </button>
         </div>
 
-        {/* Game Status */}
-        <div className="flex items-center justify-center gap-2 sm:gap-3 text-center text-gray-400 text-[11px] sm:text-sm">
-          <span>
-            Moves: {state.moveCount} | Stock: {state.stock.length} | Waste: {state.waste.length}
-          </span>
-          {isDemoMode && <span className="text-purple-400 font-medium">Demo Mode</span>}
+        <div className="flex items-center justify-center gap-3 sm:gap-5 text-center text-amber-100/90 text-[11px] sm:text-sm font-medium">
+          <span>Moves: {state.moveCount}</span>
+          <span>Time: {mins}:{secs}</span>
+          <span>Score: {score}</span>
+          <span>Foundations: {foundationCount}/52</span>
+          {isDemoMode && <span className="text-purple-300 font-semibold">Demo Mode</span>}
           {logsExist && (
             <button
               onClick={exportLogs}
-              className="text-[10px] sm:text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-[10px] sm:text-xs text-gray-400 hover:text-gray-200 transition-colors"
             >
               Export Logs
             </button>
           )}
         </div>
 
-        {/* Top row: Stock, Waste, Foundations */}
         <div
           data-testid="top-row"
           className="flex justify-center items-center gap-[var(--card-gap-top)]"
@@ -243,7 +279,7 @@ export default function GameBoard() {
             onDoubleClick={handleWasteDoubleClick}
             isDropTarget={selectedCard?.type === "waste" && !isDemoMode}
           />
-          <div className="w-2 sm:w-4" /> {/* Spacer */}
+          <div className="w-2 sm:w-4" />
           {state.foundations.map((foundation, index) => (
             <FoundationPile
               key={`foundation-${index}`}
@@ -260,7 +296,6 @@ export default function GameBoard() {
           ))}
         </div>
 
-        {/* Tableau */}
         <div
           data-testid="tableau-row"
           className="flex justify-center gap-[var(--card-gap-tableau)]"
@@ -277,20 +312,19 @@ export default function GameBoard() {
           ))}
         </div>
 
-        {/* Win Cascade */}
         {cascadePhase === "cascading" && <WinCascade onComplete={handleCascadeComplete} />}
 
-        {/* Win Message */}
         {cascadePhase === "done" && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-            <div className="bg-gradient-to-br from-amber-600 to-amber-700 p-8 rounded-2xl text-center shadow-2xl">
-              <h2 className="text-3xl font-bold text-white mb-4">
+          <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 backdrop-blur-sm">
+            <div className="bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 p-10 rounded-3xl text-center shadow-2xl border border-amber-300/30">
+              <h2 className="text-4xl font-bold text-white mb-3 drop-shadow">
                 {isDemoMode || wonByDemo ? "Demo Complete!" : "You Win!"}
               </h2>
-              <p className="text-amber-100 mb-6">Completed in {state.moveCount} moves</p>
+              <p className="text-amber-50 text-lg mb-2">Completed in {state.moveCount} moves</p>
+              <p className="text-amber-100 mb-6">Time: {mins}:{secs} · Score: {score}</p>
               <button
                 onClick={handleNewGame}
-                className="px-6 py-3 bg-white text-amber-700 font-bold rounded-lg hover:bg-amber-50 transition-colors"
+                className="px-8 py-3 bg-white text-amber-700 font-bold rounded-xl hover:bg-amber-50 transition-all hover:scale-105 shadow-lg"
               >
                 Play Again
               </button>
@@ -298,17 +332,15 @@ export default function GameBoard() {
           </div>
         )}
 
-        {/* Stalemate Message */}
         {isStalemate && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 backdrop-blur-sm">
             <div className="bg-gradient-to-br from-red-700 to-red-800 p-8 rounded-2xl text-center shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-4">Stalemate</h2>
               <p className="text-red-100 mb-2">
                 The game is stuck with no productive moves remaining.
               </p>
               <p className="text-red-200 text-sm mb-6">
-                Foundation: {state.foundations.reduce((sum, p) => sum + p.length, 0)}/52 | Moves:{" "}
-                {state.moveCount}
+                Foundation: {foundationCount}/52 | Moves: {state.moveCount}
               </p>
               <button
                 onClick={handleNewGame}
