@@ -15,6 +15,7 @@ interface GameStore {
   drawCount: DrawCount;
   scoringMode: ScoringMode;
   vegasRules: boolean;
+  dealSeed: number;
   hint: { from: CardLocation; to: CardLocation } | null;
 
   // Demo mode
@@ -35,7 +36,7 @@ interface GameStore {
   demoMoveCount: number;
 
   // Actions
-  startGame: () => void;
+  startGame: (seed?: number) => void;
   drawFromStock: () => void;
   moveCard: (from: CardLocation, to: CardLocation) => void;
   autoComplete: () => void;
@@ -346,6 +347,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     drawCount: initialDraw,
     scoringMode: loadScoringMode(),
     vegasRules: initialVegas,
+    dealSeed: engine.getSeed(),
     hint: null,
     isDemoMode: false,
     isStalemate: false,
@@ -359,14 +361,15 @@ export const useGameStore = create<GameStore>((set, get) => {
     foundationCountAtLastReshuffle: 0,
     demoMoveCount: 0,
 
-    startGame: () => {
+    startGame: (seed?: number) => {
       clearDemoTimer();
       newSession();
       const { drawCount, vegasRules } = get();
-      const engine = new KlondikeEngine(drawCount, vegasRules);
+      const engine = new KlondikeEngine(drawCount, vegasRules, seed);
       set({
         engine,
         state: engine.getState(),
+        dealSeed: engine.getSeed(),
         selectedCard: null,
         hint: null,
         isDemoMode: false,
@@ -421,6 +424,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       set({
         engine,
         state: engine.getState(),
+        dealSeed: engine.getSeed(),
         selectedCard: null,
         hint: null,
         isDemoMode: false,
@@ -452,7 +456,6 @@ export const useGameStore = create<GameStore>((set, get) => {
       saveVegasRules(enabled);
       const { engine } = get();
       engine.setVegasRules(enabled);
-      // When enabling Vegas rules, also switch to Vegas scoring
       if (enabled) {
         saveScoringMode("vegas");
         set({ vegasRules: enabled, scoringMode: "vegas" });
